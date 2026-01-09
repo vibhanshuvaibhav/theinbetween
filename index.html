@@ -12,29 +12,33 @@
         #gate {
             position: fixed; inset: 0; background: #050505; z-index: 2000;
             display: flex; align-items: center; justify-content: center;
-            color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            letter-spacing: 4px; font-weight: 200; font-size: 0.75rem; text-transform: lowercase;
         }
 
+        .btn-ui {
+            background: none; border: 1px solid #ffffff; color: #ffffff; 
+            padding: 12px 30px; border-radius: 30px; cursor: pointer;
+            font-family: sans-serif; font-weight: 200; font-size: 0.75rem; 
+            letter-spacing: 3px; text-transform: lowercase; transition: all 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .btn-ui:active { background: #ffffff; color: #000000; }
+
         #instruction-overlay {
-            position: absolute; top: 15%; width: 100%; text-align: center; color: #ffffff;
+            position: absolute; top: 18%; width: 100%; text-align: center; color: #ffffff;
             font-family: -apple-system, sans-serif; font-weight: 300; font-size: 0.85rem; 
-            line-height: 2.2; letter-spacing: 1px; z-index: 200; pointer-events: none; 
-            opacity: 0; transition: opacity 1.5s; text-transform: lowercase;
+            line-height: 2.8; letter-spacing: 1px; z-index: 200; pointer-events: none; 
+            opacity: 0; transition: opacity 2s ease-in-out; text-transform: lowercase;
         }
 
         #stats-bar {
             position: absolute; top: 40px; width: 100%; display: flex; 
             justify-content: center; gap: 30px; color: #ffffff; 
-            font-family: sans-serif; font-weight: 300; font-size: 0.75rem; 
-            letter-spacing: 1px; pointer-events: none; text-transform: lowercase;
+            font-family: sans-serif; font-weight: 300; font-size: 0.7rem; 
+            letter-spacing: 1px; pointer-events: none; text-transform: lowercase; opacity: 0.6;
         }
 
         #quit-btn {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            color: #ffffff; font-family: sans-serif; font-size: 0.7rem; 
-            letter-spacing: 2px; border: 1px solid #ffffff; padding: 10px 20px; 
-            border-radius: 25px; cursor: pointer; z-index: 300; text-transform: lowercase;
+            position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
+            z-index: 300;
         }
 
         #end-screen {
@@ -44,27 +48,30 @@
         }
 
         .bubble {
-            position: absolute; background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 0.5px solid rgba(255, 255, 255, 0.4);
-            padding: 6px 14px; border-radius: 20px; color: #ffffff;
-            font-size: 12px; pointer-events: none; display: none; z-index: 100;
+            position: absolute; background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px; border-radius: 20px; color: #ffffff;
+            font-size: 11px; pointer-events: none; opacity: 0; z-index: 100;
+            transition: opacity 0.8s ease-in-out;
         }
     </style>
 </head>
 <body>
 
-    <div id="gate" onclick="start()">[ tap to enter flow state ]</div>
+    <div id="gate">
+        <button class="btn-ui" onclick="start()">enter flow state</button>
+    </div>
 
     <audio id="snd" loop playsinline preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2523/2523-preview.mp3" type="audio/mpeg">
     </audio>
 
     <div id="instruction-overlay">
         follow the gold; it is your purpose<br>
         embrace the gifts found in the rhythm<br>
         protect the red; it's your peace<br>
-        target 100s of flow state
+        target 100s to enter flow state
     </div>
 
     <div id="stats-bar">
@@ -73,20 +80,20 @@
         <span id="d-count">💎: 0</span>
     </div>
 
-    <div id="quit-btn" onclick="finish()">end session</div>
+    <button id="quit-btn" class="btn-ui" style="display:none;" onclick="finish()">end session</button>
 
     <div id="end-screen">
-        <p id="sum-txt" style="line-height: 2; margin-bottom: 30px; font-weight: 200;"></p>
-        <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:#fff; padding: 10px 20px; border-radius: 20px;">return</button>
+        <p id="sum-txt" style="line-height: 2.2; margin-bottom: 45px; font-weight: 200; white-space: pre-line; font-size: 0.9rem;"></p>
+        <button class="btn-ui" onclick="location.reload()">return</button>
     </div>
 
     <div id="g-msg" class="bubble">follow me</div>
-    <div id="w-msg" class="bubble" style="background: rgba(200, 0, 0, 0.5);">whoa...</div>
+    <div id="w-msg" class="bubble" style="background: rgba(255, 255, 255, 0.05);">whoa...</div>
 
     <script>
         let gold, white, red, items = [];
         let frames = 0, pEaten = 0, dEaten = 0, active = false, angle = 0;
-        const Y_OFF = -100;
+        const Y_OFF = -120;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -98,36 +105,41 @@
         function start() {
             active = true;
             document.getElementById('gate').style.display = 'none';
-            document.getElementById('instruction-overlay').style.opacity = '1';
+            document.getElementById('quit-btn').style.display = 'block';
+            
+            let inst = document.getElementById('instruction-overlay');
+            inst.style.opacity = '1';
+            
             let a = document.getElementById('snd');
-            a.volume = 0.4;
+            a.volume = 0.25; 
             a.play().catch(()=>{});
-            setTimeout(() => { document.getElementById('instruction-overlay').style.opacity = '0'; }, 4000);
+            
+            setTimeout(() => { inst.style.opacity = '0'; }, 5500);
         }
 
         function draw() {
-            background(5, 5, 5, 90);
+            background(5, 5, 5, 110);
             if (!active) return;
 
             angle += 0.007;
-            let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.35), height/2 + sin(angle*0.6)*(height*0.25));
-            let magG = p5.Vector.lerp(targetG, white, 0.15);
-            gold.lerp(magG, 0.08);
+            let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.32), height/2 + sin(angle*0.6)*(height*0.22));
+            let springG = p5.Vector.lerp(targetG, white, 0.12);
+            gold.lerp(springG, 0.085);
 
             if (mouseIsPressed || (touches && touches.length > 0)) {
                 white.lerp(createVector(mouseX, mouseY + Y_OFF), 0.15);
             }
             red.lerp(white, 0.04);
 
-            if (frameCount % 120 === 0) {
-                items.push({pos: createVector(random(50, width-50), random(100, height-100)), t: random()>0.4?'p':'d', l: 400});
+            if (frameCount % 145 === 0) {
+                items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
             }
 
             for (let i = items.length-1; i >= 0; i--) {
-                if (dist(white.x, white.y, items[i].pos.x, items[i].pos.y) < 40) {
+                if (dist(white.x, white.y, items[i].pos.x, items[i].pos.y) < 45) {
                     if (items[i].t === 'p') pEaten++; else dEaten++;
                     items.splice(i, 1);
-                    if (navigator.vibrate) navigator.vibrate(15);
+                    if (navigator.vibrate) navigator.vibrate(6); 
                 } else if (--items[i].l <= 0) items.splice(i, 1);
             }
 
@@ -140,21 +152,21 @@
             document.getElementById('p-count').innerText = `🍰: ${pEaten}`;
             document.getElementById('d-count').innerText = `💎: ${dEaten}`;
 
-            if (d > 200) {
-                red.x += random(-3, 3); red.y += random(-3, 3);
-                pop('g-msg', gold.x, gold.y - 40);
-                pop('w-msg', red.x, red.y + 40);
+            if (d > 215) {
+                red.x += random(-1.5, 1.5); red.y += random(-1.5, 1.5); 
+                pop('g-msg', gold.x, gold.y - 50, true);
+                pop('w-msg', red.x, red.y + 45, true);
             } else {
                 frames++;
-                document.getElementById('g-msg').style.display = 'none';
-                document.getElementById('w-msg').style.display = 'none';
+                pop('g-msg', 0, 0, false);
+                pop('w-msg', 0, 0, false);
             }
 
-            textSize(20); textAlign(CENTER, CENTER);
+            textSize(22); textAlign(CENTER, CENTER);
             items.forEach(i => text(i.t==='p'?'🍰':'💎', i.pos.x, i.pos.y));
             
-            strokeWeight(1.5);
-            stroke(255, d > 200 ? 50 : 20);
+            strokeWeight(1.2);
+            stroke(255, d > 215 ? 45 : 18);
             line(gold.x, gold.y, white.x, white.y);
             line(white.x, white.y, red.x, red.y);
 
@@ -162,18 +174,24 @@
             fill(212, 175, 55); ellipse(gold.x, gold.y, 30);
             fill(200, 50, 50); ellipse(red.x, red.y, 22);
             fill(255); ellipse(white.x, white.y, 16);
-            fill(255, 30); ellipse(white.x, white.y, 40);
+            fill(255, 25); ellipse(white.x, white.y, 42);
         }
 
-        function pop(id, x, y) {
+        function pop(id, x, y, show) {
             let e = document.getElementById(id);
-            e.style.display = 'block'; e.style.left = x+'px'; e.style.top = y+'px';
+            if (show) {
+                e.style.opacity = '1';
+                e.style.left = constrain(x, 40, width-100)+'px'; 
+                e.style.top = constrain(y, 40, height-70)+'px';
+            } else {
+                e.style.opacity = '0';
+            }
         }
 
         function finish() {
             document.getElementById('snd').pause();
             document.getElementById('end-screen').style.display = 'flex';
-            document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyour have reclaimed your focus.\nreturn to work now.`;
+            document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyou have reclaimed your focus.\nyreturn to life.`;
         }
 
         function windowResized() { resizeCanvas(windowWidth, windowHeight); }
