@@ -3,215 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The In-Between | Flow</title>
+    <title>The In-Between</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
-        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
         body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
         
+        #gate {
+            position: fixed; inset: 0; background: #050505; z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            letter-spacing: 4px; font-weight: 200; font-size: 0.75rem; text-transform: lowercase;
+        }
+
         #instruction-overlay {
-            position: absolute; top: 100px; width: 100%;
-            text-align: center; color: #ffffff;
-            font-family: 'Inter', -apple-system, sans-serif; font-weight: 300;
-            font-size: 0.9rem; line-height: 2; letter-spacing: 3px;
-            z-index: 200; transition: opacity 1.5s ease;
+            position: absolute; top: 15%; width: 100%; text-align: center; color: #ffffff;
+            font-family: -apple-system, sans-serif; font-weight: 300; font-size: 0.85rem; 
+            line-height: 2.2; letter-spacing: 1px; z-index: 200; pointer-events: none; 
+            opacity: 0; transition: opacity 1.5s; text-transform: lowercase;
         }
 
         #stats-bar {
-            position: absolute; top: 30px; width: 100%;
-            display: flex; justify-content: center; gap: 40px;
-            color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 300;
-            font-size: 0.8rem; letter-spacing: 2px; pointer-events: none;
+            position: absolute; top: 40px; width: 100%; display: flex; 
+            justify-content: center; gap: 30px; color: #ffffff; 
+            font-family: sans-serif; font-weight: 300; font-size: 0.75rem; 
+            letter-spacing: 1px; pointer-events: none; text-transform: lowercase;
         }
 
         #quit-btn {
-            position: absolute; bottom: 40px; right: 30px;
-            color: #ffffff; font-family: 'Inter', sans-serif;
-            font-size: 0.75rem; letter-spacing: 2px; 
-            border: 1.5px solid #ffffff; background: rgba(255, 255, 255, 0.1);
-            padding: 12px 24px; border-radius: 30px; cursor: pointer;
-            z-index: 300; transition: all 0.3s;
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            color: #ffffff; font-family: sans-serif; font-size: 0.7rem; 
+            letter-spacing: 2px; border: 1px solid #ffffff; padding: 10px 20px; 
+            border-radius: 25px; cursor: pointer; z-index: 300; text-transform: lowercase;
         }
 
         #end-screen {
-            position: fixed; inset: 0; background: #050505;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; text-align: center; color: #ffffff; font-family: 'Inter', sans-serif;
+            position: fixed; inset: 0; background: #050505; display: none; 
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 3000; text-align: center; color: #ffffff; font-family: sans-serif;
         }
 
-        .ios-bubble {
+        .bubble {
             position: absolute; background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 0.8px solid rgba(255, 255, 255, 0.4);
-            padding: 8px 16px; border-radius: 20px; color: #ffffff;
-            font-family: -apple-system, sans-serif; font-size: 13px;
-            pointer-events: none; display: none; z-index: 100;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 0.5px solid rgba(255, 255, 255, 0.4);
+            padding: 6px 14px; border-radius: 20px; color: #ffffff;
+            font-size: 12px; pointer-events: none; display: none; z-index: 100;
         }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-    <audio id="bg-ocean" loop preload="auto">
+    <div id="gate" onclick="start()">[ tap to enter flow state ]</div>
+
+    <audio id="snd" loop playsinline preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3" type="audio/mpeg">
     </audio>
 
     <div id="instruction-overlay">
-        achieve flow state<br>
-        follow the gold dot, collect rewards along the way<br>
-        be gentle with the red, it's your peace
+        follow the gold; it is your purpose<br>
+        embrace the gifts found in the rhythm<br>
+        protect the red; it's your peace<br>
+        target 100s of flow state
     </div>
 
     <div id="stats-bar">
-        <span id="flow-count">flow: 0s</span>
-        <span id="dessert-count">🍰: 0</span>
-        <span id="diamond-count">💎: 0</span>
+        <span id="f-count">flow: 0s</span>
+        <span id="p-count">🍰: 0</span>
+        <span id="d-count">💎: 0</span>
     </div>
 
-    <div id="quit-btn" onclick="endSession()">end session</div>
+    <div id="quit-btn" onclick="finish()">end session</div>
 
     <div id="end-screen">
-        <h2 style="font-weight: 200; letter-spacing: 5px;">session complete</h2>
-        <p id="summary-text" style="color: #ffffff; font-weight: 200; line-height: 1.8; max-width: 300px; margin-bottom: 40px;"></p>
-        <button onclick="location.reload()" style="background:none; border: 1px solid #ffffff; color:#fff; padding: 12px 25px; border-radius: 25px; cursor:pointer;">return</button>
+        <p id="sum-txt" style="line-height: 2; margin-bottom: 30px; font-weight: 200;"></p>
+        <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:#fff; padding: 10px 20px; border-radius: 20px;">return</button>
     </div>
 
-    <div id="gold-msg" class="ios-bubble">follow me</div>
-    <div id="red-msg" class="ios-bubble">thankyou</div>
-    <div id="whoa-msg" class="ios-bubble" style="background: rgba(255, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.5);">whoa...</div>
+    <div id="g-msg" class="bubble">follow me</div>
+    <div id="w-msg" class="bubble" style="background: rgba(200, 0, 0, 0.5);">whoa...</div>
 
     <script>
-        let gold, white, red;
-        let items = [];
-        let flowFrames = 0, dessertsEaten = 0, diamondsEaten = 0;
-        let started = false;
-        let angle = 0;
-        const OFFSET_Y = -120;
+        let gold, white, red, items = [];
+        let frames = 0, pEaten = 0, dEaten = 0, active = false, angle = 0;
+        const Y_OFF = -100;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            gold = createVector(width/2, height*0.4);
+            gold = createVector(width/2, height*0.3);
             white = createVector(width/2, height/2);
             red = createVector(width/2, height*0.7);
         }
 
+        function start() {
+            active = true;
+            document.getElementById('gate').style.display = 'none';
+            document.getElementById('instruction-overlay').style.opacity = '1';
+            let a = document.getElementById('snd');
+            a.volume = 0.4;
+            a.play().catch(()=>{});
+            setTimeout(() => { document.getElementById('instruction-overlay').style.opacity = '0'; }, 4000);
+        }
+
         function draw() {
-            background(5, 5, 5, 85);
+            background(5, 5, 5, 90);
+            if (!active) return;
 
-            angle += 0.006;
-            let goldX = width/2 + cos(angle * 0.7) * (width * 0.3);
-            let goldY = height/2 + sin(angle * 0.9) * (height * 0.25);
-            let autonomousGold = createVector(goldX, goldY);
+            angle += 0.007;
+            let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.35), height/2 + sin(angle*0.6)*(height*0.25));
+            let magG = p5.Vector.lerp(targetG, white, 0.15);
+            gold.lerp(magG, 0.08);
 
-            // SOUND TRIGGER: First interaction starts audio
             if (mouseIsPressed || (touches && touches.length > 0)) {
-                if(!started) {
-                    started = true;
-                    let audio = document.getElementById('bg-ocean');
-                    audio.volume = 0.4;
-                    // Browsers require a promise catch for play()
-                    audio.play().catch(e => console.log("Interaction required for audio"));
-                    
-                    document.getElementById('instruction-overlay').style.opacity = "0";
-                    setTimeout(() => { document.getElementById('instruction-overlay').style.display = "none"; }, 1500);
-                }
-                let targetWhite = createVector(mouseX, mouseY + OFFSET_Y);
-                white.lerp(targetWhite, 0.15);
+                white.lerp(createVector(mouseX, mouseY + Y_OFF), 0.15);
+            }
+            red.lerp(white, 0.04);
+
+            if (frameCount % 120 === 0) {
+                items.push({pos: createVector(random(50, width-50), random(100, height-100)), t: random()>0.4?'p':'d', l: 400});
             }
 
-            if (started) {
-                let magneticGold = p5.Vector.lerp(autonomousGold, white, 0.2);
-                gold.lerp(magneticGold, 0.1); 
-                red.lerp(white, 0.045);
-            }
-
-            if (started && frameCount % 130 === 0) {
-                let type = random() > 0.4 ? 'dessert' : 'diamond';
-                items.push({ pos: createVector(random(60, width-60), random(140, height-140)), type: type, life: 450 });
-            }
-
-            for (let i = items.length - 1; i >= 0; i--) {
-                let d = dist(white.x, white.y, items[i].pos.x, items[i].pos.y);
-                if (d < 45) {
-                    if (items[i].type === 'dessert') dessertsEaten++;
-                    else diamondsEaten++;
+            for (let i = items.length-1; i >= 0; i--) {
+                if (dist(white.x, white.y, items[i].pos.x, items[i].pos.y) < 40) {
+                    if (items[i].t === 'p') pEaten++; else dEaten++;
                     items.splice(i, 1);
-                    if ("vibrate" in navigator) navigator.vibrate(12);
-                } else {
-                    items[i].life--;
-                    if (items[i].life <= 0) items.splice(i, 1);
-                }
+                    if (navigator.vibrate) navigator.vibrate(15);
+                } else if (--items[i].l <= 0) items.splice(i, 1);
             }
 
-            updateUI(dist(white.x, white.y, gold.x, gold.y), Math.floor(flowFrames / 60));
-            drawElements(dist(white.x, white.y, gold.x, gold.y));
+            let d = dist(white.x, white.y, gold.x, gold.y);
+            render(d);
         }
 
-        function updateUI(d, flow) {
-            document.getElementById('flow-count').innerText = `flow: ${flow}s`;
-            document.getElementById('dessert-count').innerText = `🍰: ${dessertsEaten}`;
-            document.getElementById('diamond-count').innerText = `💎: ${diamondsEaten}`;
+        function render(d) {
+            document.getElementById('f-count').innerText = `flow: ${Math.floor(frames/60)}s`;
+            document.getElementById('p-count').innerText = `🍰: ${pEaten}`;
+            document.getElementById('d-count').innerText = `💎: ${dEaten}`;
 
-            let whoaMsg = document.getElementById('whoa-msg');
-            if (d > 220 && started) {
-                red.x += random(-3.5, 3.5); red.y += random(-3.5, 3.5);
-                document.getElementById('gold-msg').style.display = 'block';
-                document.getElementById('gold-msg').style.left = (gold.x + 20) + 'px';
-                document.getElementById('gold-msg').style.top = (gold.y - 50) + 'px';
-                whoaMsg.style.display = 'block';
-                whoaMsg.style.left = (red.x - 30) + 'px';
-                whoaMsg.style.top = (red.y + 30) + 'px';
-                if (frameCount % 10 === 0 && "vibrate" in navigator) navigator.vibrate(5);
+            if (d > 200) {
+                red.x += random(-3, 3); red.y += random(-3, 3);
+                pop('g-msg', gold.x, gold.y - 40);
+                pop('w-msg', red.x, red.y + 40);
             } else {
-                if (started) flowFrames++;
-                document.getElementById('gold-msg').style.display = 'none';
-                whoaMsg.style.display = 'none';
+                frames++;
+                document.getElementById('g-msg').style.display = 'none';
+                document.getElementById('w-msg').style.display = 'none';
             }
 
-            let rMsg = document.getElementById('red-msg');
-            rMsg.style.display = (flow >= 10 && d <= 220) ? 'block' : 'none';
-            if (rMsg.style.display === 'block') {
-                rMsg.style.left = (red.x + 20) + 'px';
-                rMsg.style.top = (red.y + 20) + 'px';
-            }
-        }
-
-        function drawElements(d) {
-            textSize(22); textAlign(CENTER, CENTER);
-            items.forEach(item => {
-                text(item.type === 'dessert' ? '🍰' : '💎', item.pos.x, item.pos.y);
-            });
-
+            textSize(20); textAlign(CENTER, CENTER);
+            items.forEach(i => text(i.t==='p'?'🍰':'💎', i.pos.x, i.pos.y));
+            
             strokeWeight(1.5);
-            if (d > 220) {
-                stroke(255, 40, 40, 150);
-                for (let i = 0; i < 10; i++) {
-                    line(lerp(white.x, red.x, i/10)+random(-4,4), lerp(white.y, red.y, i/10)+random(-4,4), 
-                         lerp(white.x, red.x, (i+1)/10)+random(-4,4), lerp(white.y, red.y, (i+1)/10)+random(-4,4));
-                }
-            } else {
-                stroke(255, 255, 255, 25);
-                line(white.x, white.y, red.x, red.y);
-            }
-            stroke(255, 255, 255, 25);
+            stroke(255, d > 200 ? 50 : 20);
             line(gold.x, gold.y, white.x, white.y);
+            line(white.x, white.y, red.x, red.y);
 
             noStroke();
-            fill(212, 175, 55); ellipse(gold.x, gold.y, 32, 32);
-            fill(200, 50, 50); ellipse(red.x, red.y, 24, 24);
-            fill(255); ellipse(white.x, white.y, 18, 18);
-            fill(255, 255, 255, 40); ellipse(white.x, white.y, 45, 45);
+            fill(212, 175, 55); ellipse(gold.x, gold.y, 30);
+            fill(200, 50, 50); ellipse(red.x, red.y, 22);
+            fill(255); ellipse(white.x, white.y, 16);
+            fill(255, 30); ellipse(white.x, white.y, 40);
         }
 
-        function endSession() {
-            document.getElementById('bg-ocean').pause();
-            let flow = Math.floor(flowFrames / 60);
-            document.getElementById('end-screen').style.display = 'flex';
-            document.getElementById('summary-text').innerText = 
-                `flow attained: ${flow}s\n` +
-                `sustenance (🍰): ${dessertsEaten}\n` +
-                `discipline (💎): ${diamondsEaten}\n\n` +
-                `you have reclaimed your focus.`;
+        function pop(id, x, y) {
+            let e = document.getElementById(id);
+            e.style.display = 'block'; e.style.left = x+'px'; e.style.top = y+'px';
         }
+
+        function finish() {
+            document.getElementById('snd').pause();
+            document.getElementById('end-screen').style.display = 'flex';
+            document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyour have reclaimed your focus.\nreturn to work now.`;
+        }
+
         function windowResized() { resizeCanvas(windowWidth, windowHeight); }
     </script>
 </body>
