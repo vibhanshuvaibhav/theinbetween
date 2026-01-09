@@ -3,169 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The In-Between | Kinetic Void</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <title>The In-Between | Balance</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
-        body {
-            margin: 0; padding: 0;
-            background-color: #050505; /* Minimalist dark */
-            color: #ffffff;
-            font-family: 'Inter', -apple-system, sans-serif;
-            overflow: hidden;
-            display: flex; flex-direction: column; align-items: center;
-            transition: background 2s ease;
+        body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: none; }
+        
+        /* iPhone Style Message Bubble */
+        #msg-container {
+            position: absolute;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
         }
 
-        #ui-layer {
-            position: absolute; top: 15%; z-index: 10;
-            text-align: center; width: 100%; pointer-events: none;
+        .ios-bubble {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 14px;
+            border-radius: 18px;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 13px;
+            letter-spacing: -0.2px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
-        input {
-            background: transparent; border: none;
-            border-bottom: 1px solid #222;
-            color: #fff; font-size: 1.2rem; text-align: center;
-            outline: none; width: 280px; padding: 10px;
-            pointer-events: auto; transition: all 0.8s ease;
-            font-weight: 200; letter-spacing: 1px;
+        /* The small tail of the bubble */
+        .ios-bubble::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 20px;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
         }
-
-        input:focus { border-bottom: 1px solid #eee; width: 350px; }
 
         #instruction {
-            color: #444; font-size: 0.7rem; margin-top: 15px;
-            letter-spacing: 3px; text-transform: uppercase;
-        }
-
-        #void-glow {
-            position: absolute; bottom: -100px;
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0) 70%);
-            border-radius: 50%; z-index: 1; pointer-events: none;
+            position: absolute; width: 100%; bottom: 40px;
+            color: #333; font-family: sans-serif;
+            text-align: center; letter-spacing: 5px;
+            font-size: 0.6rem; text-transform: uppercase;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <input type="text" id="thoughtInput" placeholder="Type a thought..." autocomplete="off">
-        <div id="instruction">Press Enter to drop it</div>
+    <div id="msg-container">
+        <div class="ios-bubble">follow me</div>
     </div>
 
-    <div id="void-glow"></div>
+    <div id="instruction">Keep the white centered</div>
 
     <script>
-        // 1. AUDIO ENGINE (Brown Noise for focus)
-        let audioStarted = false;
-        const noise = new Tone.Noise("brown").start();
-        const filter = new Tone.AutoFilter({ frequency: "8n", baseFrequency: 200, octaves: 2 }).connect(Tone.Destination);
-        noise.connect(filter);
-        noise.volume.value = -Infinity;
+        let gold, red, white;
+        let angle = 0;
+        let msg;
 
-        async function initAudio() {
-            if (!audioStarted) {
-                await Tone.start();
-                noise.volume.rampTo(-25, 5); // Smooth fade in
-                filter.start();
-                audioStarted = true;
-            }
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            gold = createVector(width / 2, height / 2);
+            red = createVector(width / 2, height / 2);
+            white = createVector(width / 2, height / 2);
+            msg = document.getElementById('msg-container');
         }
 
-        function playPop() {
-            const synth = new Tone.MetalSynth({
-                harmonicity: 12, resonance: 800,
-                modulationIndex: 20, envelope: { attack: 0.01, decay: 0.4 }
-            }).toDestination();
-            synth.triggerAttackRelease("C6", "16n", undefined, 0.1);
+        function draw() {
+            background(5, 5, 5, 45); 
+
+            // 1. GOLDEN DOT - Elegant, unpredictable drift
+            angle += 0.008;
+            gold.x = width/2 + cos(angle) * (width * 0.35) * sin(angle * 0.5);
+            gold.y = height/2 + sin(angle * 0.7) * (height * 0.35);
+
+            // 2. RED DOT - Controlled by User
+            let targetRed = createVector(mouseX, mouseY);
+            red.lerp(targetRed, 0.15); 
+
+            // 3. WHITE DOT - The Balance point
+            let midpoint = p5.Vector.lerp(gold, red, 0.5);
+            white.lerp(midpoint, 0.2);
+
+            // Logic: Is the user failing?
+            let error = dist(white.x, white.y, midpoint.x, midpoint.y);
+            
+            if (error > 35) {
+                msg.style.display = 'block';
+                msg.style.left = (gold.x + 15) + 'px';
+                msg.style.top = (gold.y - 45) + 'px';
+            } else {
+                msg.style.display = 'none';
+            }
+
+            drawDots();
         }
 
-        // 2. PHYSICS ENGINE (Matter.js)
-        const { Engine, Render, Runner, Bodies, Composite, Mouse, MouseConstraint, Events } = Matter;
-        const engine = Engine.create();
-        engine.gravity.y = 0.1; // Soft gravity
+        function drawDots() {
+            // Connection line
+            stroke(255, 255, 255, 8);
+            line(gold.x, gold.y, red.x, red.y);
 
-        const render = Render.create({
-            element: document.body,
-            engine: engine,
-            options: {
-                width: window.innerWidth,
-                height: window.innerHeight,
-                wireframes: false,
-                background: 'transparent'
-            }
-        });
+            // Gold Dot
+            noStroke();
+            fill(212, 175, 55); 
+            ellipse(gold.x, gold.y, 14, 14);
+            // Gold Outer Glow
+            fill(212, 175, 55, 20);
+            ellipse(gold.x, gold.y, 30, 30);
 
-        // Floor (invisible)
-        const ground = Bodies.rectangle(window.innerWidth/2, window.innerHeight + 50, window.innerWidth, 100, { isStatic: true });
-        Composite.add(engine.world, [ground]);
+            // Red Dot
+            fill(200, 50, 50);
+            ellipse(red.x, red.y, 10, 10);
 
-        // 3. INPUT INTERACTION
-        const input = document.getElementById('thoughtInput');
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && input.value.trim() !== "") {
-                initAudio();
-                const text = input.value;
-                const bubble = Bodies.circle(window.innerWidth/2, 150, 30 + text.length * 2, {
-                    restitution: 0.6, friction: 0.1,
-                    render: { fillStyle: 'transparent', strokeStyle: '#333', lineWidth: 1 }
-                });
-                bubble.thoughtText = text;
-                bubble.label = "thought";
-                Composite.add(engine.world, bubble);
-                input.value = "";
-            }
-        });
+            // White Dot
+            fill(255);
+            ellipse(white.x, white.y, 8, 8);
+            fill(255, 255, 255, 40);
+            ellipse(white.x, white.y, 22, 22);
+        }
 
-        // Mouse interaction (dragging bubbles)
-        const mouse = Mouse.create(render.canvas);
-        const mouseConstraint = MouseConstraint.create(engine, {
-            mouse: mouse, constraint: { stiffness: 0.2, render: { visible: false } }
-        });
-        Composite.add(engine.world, mouseConstraint);
-
-        // Render text inside bubbles
-        Events.on(render, 'afterRender', () => {
-            const context = render.context;
-            context.font = "300 14px Inter";
-            context.fillStyle = "rgba(255, 255, 255, 0.6)";
-            context.textAlign = "center";
-            Composite.allBodies(engine.world).forEach(body => {
-                if (body.thoughtText) {
-                    context.fillText(body.thoughtText, body.position.x, body.position.y + 5);
-                }
-            });
-        });
-
-        // 4. THE VOID LOGIC
-        Events.on(engine, 'beforeUpdate', () => {
-            const voidX = window.innerWidth / 2;
-            const voidY = window.innerHeight;
-
-            Composite.allBodies(engine.world).forEach(body => {
-                if (body.label === "thought") {
-                    const dist = Math.hypot(body.position.x - voidX, body.position.y - voidY);
-                    
-                    if (dist < 250) { // Sucking effect
-                        body.force.x = (voidX - body.position.x) * 0.001;
-                        body.force.y = (voidY - body.position.y) * 0.001;
-                        
-                        if (dist < 40) { // Disappear
-                            playPop();
-                            Composite.remove(engine.world, body);
-                        }
-                    }
-                }
-            });
-        });
-
-        Render.run(render);
-        Runner.run(Runner.create(), engine);
-
-        window.addEventListener('resize', () => {
-            render.canvas.width = window.innerWidth;
-            render.canvas.height = window.innerHeight;
-        });
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
     </script>
 </body>
 </html>
