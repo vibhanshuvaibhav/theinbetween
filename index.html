@@ -4,153 +4,238 @@
 <meta charset="UTF-8">
 <title>The In-Between — Garden</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
-html,body{
-  margin:0;
-  padding:0;
-  background:#cfe8ff;
-  overflow:hidden;
-  touch-action:none;
-  font-family:'Playfair Display',serif;
-}
-canvas{display:block;}
-.ui{position:absolute;width:100%;text-align:center;color:#333;pointer-events:none;}
-#hint{top:12px;font-size:15px;letter-spacing:0.05em;}
-#done{top:50%;transform:translateY(-50%);font-size:22px;display:none;}
-#privacy{bottom:12px;font-size:11px;opacity:0.4;}
+    :root {
+        --earth-green: #4a5d4e;
+        --soft-grass: #8ba88e;
+        --sky-blue: #e3f2fd;
+        --text-color: #2c3e50;
+    }
+    html, body {
+        margin: 0; padding: 0;
+        background: var(--sky-blue);
+        overflow: hidden;
+        touch-action: none;
+        font-family: 'Playfair Display', serif;
+    }
+    canvas { display: block; }
+    .ui { 
+        position: absolute; width: 100%; text-align: center; 
+        color: var(--text-color); pointer-events: none; transition: opacity 1s ease;
+    }
+    #hint { top: 10%; font-size: 1.2rem; letter-spacing: 0.1em; font-style: italic; opacity: 0.8; }
+    #done { 
+        top: 45%; font-size: 1.8rem; display: none; 
+        background: rgba(255,255,255,0.4); padding: 20px; backdrop-filter: blur(5px);
+        pointer-events: auto; cursor: pointer;
+    }
+    #privacy { bottom: 20px; font-size: 0.7rem; opacity: 0.4; letter-spacing: 0.2em; text-transform: uppercase; }
+    #start-btn {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.9); display: flex; align-items: center;
+        justify-content: center; z-index: 10; cursor: pointer; font-size: 1.5rem;
+    }
 </style>
 </head>
 <body>
 
+<div id="start-btn">Tap to enter the Garden</div>
+
 <canvas id="canvas"></canvas>
-<div class="ui" id="hint">help crow (mind) have some water (rest) — put the stones in the jar</div>
-<div class="ui" id="done">well done. let’s get back to work.</div>
-<div class="ui" id="privacy">no tracking · no data · nothing stored</div>
+<div class="ui" id="hint">Help crow (mind) have some water (rest)</div>
+<div class="ui" id="done">Well done. Let’s get back to life.<br><small style="font-size: 0.8rem;">Tap to reset</small></div>
+<div class="ui" id="privacy">Pure Privacy · No Data · Just Peace</div>
 
 <script>
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-let w,h,dpr;
-function resize(){
- dpr=window.devicePixelRatio||1;
- w=innerWidth;h=innerHeight;
- canvas.width=w*dpr;canvas.height=h*dpr;
- canvas.style.width=w+"px";canvas.style.height=h+"px";
- ctx.setTransform(dpr,0,0,dpr,0,0);
+/** AUDIO ENGINE - 528Hz Solfeggio Frequency **/
+let audioCtx;
+let oscillator;
+let gainNode;
+
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    oscillator = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(528, audioCtx.currentTime); // 528Hz: Healing Frequency
+    
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
 }
-window.onresize=resize;resize();
 
-const TOTAL=60;
-let stones=[];
-const jar={x:()=>w/2,y:()=>h*0.55,w:130,h:220,water:0};
-let crow={x:()=>w*0.85,y:()=>h*0.15,blink:0,fly:false};
-
-function init(){
- stones=[];
- for(let i=0;i<TOTAL;i++){
-  stones.push({
-   x:40+(i%10)*30,
-   y:h*0.7+Math.floor(i/10)*26,
-   r:10,
-   in:false
-  });
- }
- jar.water=0;
- crow.fly=false;
- document.getElementById("done").style.display="none";
+function fadeAudio(vol) {
+    if (gainNode) gainNode.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.2);
 }
-init();
 
-let drag=null;
-canvas.onpointerdown=e=>{
- const x=e.clientX,y=e.clientY;
- for(const s of stones){
-  if(!s.in && Math.hypot(x-s.x,y-s.y)<s.r+8){drag=s;break;}
- }
+/** VISUAL ENGINE **/
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let w, h, dpr;
+
+function resize() {
+    dpr = window.devicePixelRatio || 1;
+    w = innerWidth; h = innerHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + "px"; canvas.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.onresize = resize; resize();
+
+const TOTAL = 60;
+let stones = [];
+const jar = { x: () => w / 2, y: () => h * 0.5, w: 90, h: 200, water: 0 };
+
+function init() {
+    stones = [];
+    // Pile stones 30 on each side
+    for (let i = 0; i < TOTAL; i++) {
+        const side = i < 30 ? -1 : 1;
+        const column = (i % 5);
+        const row = Math.floor((i % 30) / 5);
+        stones.push({
+            x: w / 2 + (side * (80 + column * 20)),
+            y: h * 0.75 + (row * 15),
+            originX: 0, originY: 0,
+            r: 8 + Math.random() * 6,
+            color: `hsl(0, 0%, ${40 + Math.random() * 30}%)`,
+            in: false,
+            dragging: false
+        });
+    }
+    jar.water = 0;
+    document.getElementById("done").style.display = "none";
+}
+
+let drag = null;
+const startBtn = document.getElementById("start-btn");
+
+startBtn.onclick = () => {
+    initAudio();
+    fadeAudio(0.1);
+    startBtn.style.display = "none";
+    init();
 };
-canvas.onpointermove=e=>{if(drag){drag.x=e.clientX;drag.y=e.clientY;}};
-canvas.onpointerup=()=>{
- if(drag){
-  if(
-   drag.x>jar.x()-jar.w/2 &&
-   drag.x<jar.x()+jar.w/2 &&
-   drag.y>jar.y()-jar.h/2 &&
-   drag.y<jar.y()+jar.h/2
-  ){
-   drag.in=true;
-   jar.water++;
-  }
- }
- drag=null;
+
+document.getElementById("done").onclick = () => { init(); };
+
+canvas.onpointerdown = e => {
+    const x = e.clientX, y = e.clientY;
+    for (const s of stones) {
+        if (!s.in && Math.hypot(x - s.x, y - s.y) < s.r + 15) {
+            drag = s; 
+            s.dragging = true;
+            fadeAudio(0.2); // Subtle hum increase when engaging
+            break;
+        }
+    }
 };
 
-function drawSky(){
- const g=ctx.createLinearGradient(0,0,0,h);
- g.addColorStop(0,"#cfe8ff");
- g.addColorStop(1,"#fefefe");
- ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-}
-function drawTrees(){
- ctx.fillStyle="rgba(50,120,70,0.5)";
- for(let i=0;i<6;i++){
-  ctx.beginPath();
-  ctx.arc(i*w/5,h*0.68,80,Math.PI,Math.PI*2);
-  ctx.fill();
- }
-}
-function drawGround(){
- ctx.fillStyle="#6fbf7f";
- ctx.fillRect(0,h*0.7,w,h);
-}
+canvas.onpointermove = e => {
+    if (drag) {
+        drag.x = e.clientX;
+        drag.y = e.clientY;
+    }
+};
 
-function drawJar(){
- ctx.strokeStyle="rgba(180,180,180,0.8)";
- ctx.lineWidth=2;
- ctx.strokeRect(jar.x()-jar.w/2,jar.y()-jar.h/2,jar.w,jar.h);
+canvas.onpointerup = () => {
+    if (drag) {
+        const inJarX = drag.x > jar.x() - jar.w / 2 && drag.x < jar.x() + jar.w / 2;
+        const inJarY = drag.y > jar.y() - jar.h / 2 && drag.y < jar.y() + jar.h / 2;
+        
+        if (inJarX && inJarY) {
+            drag.in = true;
+            jar.water++;
+        }
+        drag.dragging = false;
+        fadeAudio(0.1);
+    }
+    drag = null;
+};
 
- const wh=(jar.water/TOTAL)*jar.h;
- ctx.fillStyle="rgba(120,180,200,0.6)";
- ctx.fillRect(jar.x()-jar.w/2,jar.y()+jar.h/2-wh,jar.w,wh);
-}
+function drawBackground() {
+    // Sky
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#c2e9fb");
+    sky.addColorStop(1, "#ffffff");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
 
-function drawStone(s){
- const g=ctx.createRadialGradient(s.x-3,s.y-3,2,s.x,s.y,s.r);
- g.addColorStop(0,"#eee");
- g.addColorStop(1,"#999");
- ctx.fillStyle=g;
- ctx.beginPath();
- ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
- ctx.fill();
-}
-
-function drawCrow(){
- crow.blink=(crow.blink+1)%200;
- const eye=crow.blink<5?2:6;
- ctx.fillStyle="#222";
- ctx.beginPath();
- ctx.arc(crow.x(),crow.y(),10,0,Math.PI*2);
- ctx.fill();
- ctx.fillStyle="#fff";
- ctx.beginPath();
- ctx.arc(crow.x()+4,crow.y()-2,eye,0,Math.PI*2);
- ctx.fill();
+    // Grassy Ground
+    const grass = ctx.createLinearGradient(0, h * 0.7, 0, h);
+    grass.addColorStop(0, "#8ba88e");
+    grass.addColorStop(1, "#4a5d4e");
+    ctx.fillStyle = grass;
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.85, w * 0.8, h * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
 }
 
-function update(){
- drawSky();
- drawTrees();
- drawGround();
- drawJar();
- drawCrow();
+function drawJar() {
+    const jX = jar.x() - jar.w / 2;
+    const jY = jar.y() - jar.h / 2;
 
- for(const s of stones){ if(!s.in) drawStone(s); }
+    // Water
+    const waterLevel = (jar.water / TOTAL) * (jar.h * 0.8);
+    ctx.fillStyle = "rgba(135, 206, 235, 0.6)";
+    ctx.fillRect(jX + 5, (jY + jar.h - 10) - waterLevel, jar.w - 10, waterLevel);
 
- if(jar.water>=TOTAL){
-  document.getElementById("done").style.display="block";
- }
+    // Glass Jar Silhouette
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round";
+    ctx.strokeRect(jX, jY, jar.w, jar.h);
+}
 
- requestAnimationFrame(update);
+function drawCrow() {
+    const cx = jar.x() + 40;
+    const cy = jar.y() - jar.h / 2 - 10;
+    
+    ctx.fillStyle = "#222";
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 15, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Head
+    ctx.beginPath();
+    ctx.arc(cx - 12, cy - 8, 8, 0, Math.PI * 2);
+    ctx.fill();
+    // Beak
+    ctx.fillStyle = "#f39c12";
+    ctx.beginPath();
+    ctx.moveTo(cx - 20, cy - 8);
+    ctx.lineTo(cx - 30, cy - 5);
+    ctx.lineTo(cx - 20, cy - 2);
+    ctx.fill();
+}
+
+function update() {
+    drawBackground();
+    drawJar();
+    drawCrow();
+
+    stones.forEach(s => {
+        if (!s.in) {
+            ctx.fillStyle = s.color;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fill();
+            // Subtle highlight
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            ctx.beginPath();
+            ctx.arc(s.x - 2, s.y - 2, s.r * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    if (jar.water >= TOTAL) {
+        document.getElementById("done").style.display = "block";
+    }
+
+    requestAnimationFrame(update);
 }
 update();
 </script>
