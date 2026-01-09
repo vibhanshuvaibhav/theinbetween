@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The In-Between | Choice</title>
+    <title>The In-Between | Choice & Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
@@ -12,9 +12,18 @@
         #stats-bar {
             position: absolute; top: 30px; width: 100%;
             display: flex; justify-content: center; gap: 40px;
-            color: rgba(255, 255, 255, 0.2);
-            font-family: 'Inter', sans-serif; font-weight: 200;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: 'Inter', -apple-system, sans-serif; font-weight: 200;
             font-size: 0.8rem; letter-spacing: 2px; pointer-events: none;
+        }
+
+        #instruction-overlay {
+            position: absolute; top: 50%; width: 100%;
+            text-align: center; color: #fff;
+            font-family: 'Inter', sans-serif; font-weight: 200;
+            font-size: 0.9rem; line-height: 1.8; letter-spacing: 2px;
+            transform: translateY(-50%); z-index: 200;
+            transition: opacity 1.2s ease;
         }
 
         #quit-btn {
@@ -24,7 +33,6 @@
             padding: 8px 15px; border-radius: 20px; cursor: pointer;
             z-index: 300; transition: all 0.3s;
         }
-        #quit-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
 
         #end-screen {
             position: fixed; inset: 0; background: #050505;
@@ -44,18 +52,23 @@
 </head>
 <body oncontextmenu="return false;">
 
+    <div id="instruction-overlay">
+        ACHIEVE FLOW STATE<br>
+        <span style="font-size: 0.7rem; color: #888;">MAKE GOLDEN FOLLOW WHITE<br>COLLECT APPLES AND DIAMONDS</span>
+    </div>
+
     <div id="stats-bar">
         <span id="flow-count">FLOW: 0s</span>
-        <span id="apple-count">APPLES: 0</span>
-        <span id="diamond-count">DIAMONDS: 0</span>
+        <span id="apple-count">🍎: 0</span>
+        <span id="diamond-count">💎: 0</span>
     </div>
 
     <div id="quit-btn" onclick="endSession()">END SESSION</div>
 
     <div id="end-screen">
         <h2 style="font-weight: 200; letter-spacing: 5px;">SESSION COMPLETE</h2>
-        <p id="summary-text" style="color: #666; font-weight: 200; line-height: 1.6; max-width: 300px; margin-bottom: 30px;"></p>
-        <button onclick="location.reload()" style="background:none; border: 1px solid #333; color:#fff; padding: 10px 20px; border-radius: 20px; cursor:pointer;">RETURN</button>
+        <p id="summary-text" style="color: #888; font-weight: 200; line-height: 1.8; max-width: 300px; margin-bottom: 40px;"></p>
+        <button onclick="location.reload()" style="background:none; border: 1px solid #444; color:#fff; padding: 12px 25px; border-radius: 25px; cursor:pointer; font-size: 0.8rem; letter-spacing: 1px;">RETURN TO VOID</button>
     </div>
 
     <div id="gold-msg" class="ios-bubble">follow me</div>
@@ -63,52 +76,55 @@
 
     <script>
         let gold, white, red;
-        let items = []; // Both apples and diamonds
-        let angle = 0;
+        let items = [];
         let flowFrames = 0, applesEaten = 0, diamondsEaten = 0;
         let started = false;
         const OFFSET_Y = -120;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            gold = createVector(width/2, height*0.3);
-            white = createVector(width/2, height*0.5);
+            gold = createVector(width/2, height*0.4);
+            white = createVector(width/2, height/2);
             red = createVector(width/2, height*0.7);
         }
 
         function draw() {
-            background(5, 5, 5, 80);
-
-            angle += 0.005;
-            gold.x = width/2 + cos(angle * 0.7) * (width * 0.3);
-            gold.y = height/2 + sin(angle * 0.9) * (height * 0.25);
+            background(5, 5, 5, 85);
 
             if (mouseIsPressed || touches.length > 0) {
-                started = true;
+                if(!started) {
+                    started = true;
+                    document.getElementById('instruction-overlay').style.opacity = "0";
+                    setTimeout(() => { document.getElementById('instruction-overlay').style.display = "none"; }, 1200);
+                }
                 let targetWhite = createVector(mouseX, mouseY + OFFSET_Y);
                 white.lerp(targetWhite, 0.15);
             }
 
-            red.lerp(white, 0.04);
+            // Ambition (Gold) follows Focus (White)
+            if (started) {
+                gold.lerp(white, 0.035); 
+                red.lerp(white, 0.045);
+            }
 
             // Spawn Logic
-            if (started && frameCount % 120 === 0) {
+            if (started && frameCount % 130 === 0) {
                 let type = random() > 0.4 ? 'apple' : 'diamond';
                 items.push({
-                    pos: createVector(random(50, width-50), random(100, height-100)),
+                    pos: createVector(random(60, width-60), random(120, height-120)),
                     type: type,
-                    life: 400
+                    life: 450
                 });
             }
 
             // Consumption
             for (let i = items.length - 1; i >= 0; i--) {
                 let d = dist(white.x, white.y, items[i].pos.x, items[i].pos.y);
-                if (d < 35) {
+                if (d < 45) {
                     if (items[i].type === 'apple') applesEaten++;
                     else diamondsEaten++;
                     items.splice(i, 1);
-                    if ("vibrate" in navigator) navigator.vibrate(10);
+                    if ("vibrate" in navigator) navigator.vibrate(12);
                 } else {
                     items[i].life--;
                     if (items[i].life <= 0) items.splice(i, 1);
@@ -119,16 +135,16 @@
             let totalFlow = Math.floor(flowFrames / 60);
             
             updateUI(distance, totalFlow);
-            drawVisuals(distance);
+            drawElements(distance);
         }
 
         function updateUI(d, flow) {
             document.getElementById('flow-count').innerText = `FLOW: ${flow}s`;
-            document.getElementById('apple-count').innerText = `APPLES: ${applesEaten}`;
-            document.getElementById('diamond-count').innerText = `DIAMONDS: ${diamondsEaten}`;
+            document.getElementById('apple-count').innerText = `🍎: ${applesEaten}`;
+            document.getElementById('diamond-count').innerText = `💎: ${diamondsEaten}`;
 
-            if (d > 220) {
-                red.x += random(-3, 3); red.y += random(-3, 3); // Shaking
+            if (d > 220 && started) {
+                red.x += random(-3.5, 3.5); red.y += random(-3.5, 3.5);
                 document.getElementById('gold-msg').style.display = 'block';
                 document.getElementById('gold-msg').style.left = (gold.x + 20) + 'px';
                 document.getElementById('gold-msg').style.top = (gold.y - 50) + 'px';
@@ -137,44 +153,57 @@
                 document.getElementById('gold-msg').style.display = 'none';
             }
 
-            document.getElementById('red-msg').style.display = (flow >= 10 && d <= 220) ? 'block' : 'none';
-            if (document.getElementById('red-msg').style.display === 'block') {
-                document.getElementById('red-msg').style.left = (red.x + 20) + 'px';
-                document.getElementById('red-msg').style.top = (red.y + 20) + 'px';
+            let rMsg = document.getElementById('red-msg');
+            rMsg.style.display = (flow >= 10 && d <= 220) ? 'block' : 'none';
+            if (rMsg.style.display === 'block') {
+                rMsg.style.left = (red.x + 20) + 'px';
+                rMsg.style.top = (red.y + 20) + 'px';
             }
         }
 
-        function drawVisuals(d) {
-            // Draw Items
+        function drawElements(d) {
+            // Draw Emoji Items
+            textSize(22);
+            textAlign(CENTER, CENTER);
             items.forEach(item => {
-                if (item.type === 'apple') {
-                    fill(150, 255, 100, 180); ellipse(item.pos.x, item.pos.y, 10, 10); // Apple
-                } else {
-                    push(); translate(item.pos.x, item.pos.y); rotate(QUARTER_PI);
-                    fill(100, 200, 255, 180); rect(-6, -6, 12, 12); pop(); // Diamond
-                }
+                let label = item.type === 'apple' ? '🍎' : '💎';
+                text(label, item.pos.x, item.pos.y);
             });
 
-            // Lines
-            strokeWeight(1);
-            stroke(d > 220 ? color(255, 0, 0, 100) : color(255, 255, 255, 10));
-            line(white.x, white.y, red.x, red.y);
-            stroke(255, 255, 255, 10);
+            // Connection Lines
+            strokeWeight(1.5);
+            if (d > 220) {
+                stroke(255, 40, 40, 120);
+                for (let i = 0; i < 10; i++) {
+                    line(lerp(white.x, red.x, i/10)+random(-4,4), lerp(white.y, red.y, i/10)+random(-4,4), 
+                         lerp(white.x, red.x, (i+1)/10)+random(-4,4), lerp(white.y, red.y, (i+1)/10)+random(-4,4));
+                }
+            } else {
+                stroke(255, 255, 255, 12);
+                line(white.x, white.y, red.x, red.y);
+            }
+            stroke(255, 255, 255, 12);
             line(gold.x, gold.y, white.x, white.y);
 
-            // Dots
+            // Core Dots
             noStroke();
-            fill(212, 175, 55); ellipse(gold.x, gold.y, 28, 28);
-            fill(200, 50, 50); ellipse(red.x, red.y, 22, 22);
-            fill(255); ellipse(white.x, white.y, 16, 16);
+            fill(212, 175, 55); ellipse(gold.x, gold.y, 32, 32); // Gold
+            fill(200, 50, 50); ellipse(red.x, red.y, 24, 24);   // Red
+            fill(255); ellipse(white.x, white.y, 18, 18);        // White
+            fill(255, 255, 255, 30); ellipse(white.x, white.y, 45, 45); // Outer White
         }
 
         function endSession() {
             let flow = Math.floor(flowFrames / 60);
             document.getElementById('end-screen').style.display = 'flex';
             document.getElementById('summary-text').innerText = 
-                `You maintained ${flow}s of pure focus.\nCollected ${applesEaten} apples for the journey.\nAnd successfully handled ${diamondsEaten} diamonds.\n\nYour mind is now ready.`;
+                `FLOW ATTAINED: ${flow}s\n` +
+                `SUSTENANCE (🍎): ${applesEaten}\n` +
+                `DISCIPLINE (💎): ${diamondsEaten}\n\n` +
+                `You have reclaimed your focus.\nNow, return to life with intention.`;
         }
+
+        function windowResized() { resizeCanvas(windowWidth, windowHeight); }
     </script>
 </body>
 </html>
