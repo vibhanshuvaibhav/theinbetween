@@ -9,7 +9,6 @@
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
         body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
         
-        /* Updated to pure white and clearer visibility */
         #instruction-overlay {
             position: absolute; top: 100px; width: 100%;
             text-align: center; color: #ffffff;
@@ -21,23 +20,18 @@
         #stats-bar {
             position: absolute; top: 30px; width: 100%;
             display: flex; justify-content: center; gap: 40px;
-            color: #ffffff;
-            font-family: 'Inter', sans-serif; font-weight: 300;
+            color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 300;
             font-size: 0.8rem; letter-spacing: 2px; pointer-events: none;
-            opacity: 0.8;
         }
 
         #quit-btn {
-            position: absolute; bottom: 30px; right: 30px;
+            position: absolute; bottom: 40px; right: 30px;
             color: #ffffff; font-family: 'Inter', sans-serif;
             font-size: 0.75rem; letter-spacing: 2px; 
-            border: 1.5px solid #ffffff;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px; border-radius: 25px; cursor: pointer;
+            border: 1.5px solid #ffffff; background: rgba(255, 255, 255, 0.1);
+            padding: 12px 24px; border-radius: 30px; cursor: pointer;
             z-index: 300; transition: all 0.3s;
-            opacity: 0.9;
         }
-        #quit-btn:hover { background: #ffffff; color: #000000; }
 
         #end-screen {
             position: fixed; inset: 0; background: #050505;
@@ -57,14 +51,14 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <audio id="bg-ocean" loop>
+    <audio id="bg-ocean" loop preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3" type="audio/mpeg">
     </audio>
 
     <div id="instruction-overlay">
         achieve flow state<br>
         collect rewards along the way<br>
-        take care of red dot, it follows you
+        take care of red
     </div>
 
     <div id="stats-bar">
@@ -76,9 +70,9 @@
     <div id="quit-btn" onclick="endSession()">end session</div>
 
     <div id="end-screen">
-        <h2 style="font-weight: 200; letter-spacing: 5px; font-size: 1.2rem;">session complete</h2>
-        <p id="summary-text" style="color: #ffffff; font-weight: 200; line-height: 1.8; max-width: 300px; margin-bottom: 40px; font-size: 0.9rem; opacity: 0.8;"></p>
-        <button onclick="location.reload()" style="background:none; border: 1px solid #ffffff; color:#fff; padding: 12px 25px; border-radius: 25px; cursor:pointer; font-size: 0.75rem; letter-spacing: 2px;">return</button>
+        <h2 style="font-weight: 200; letter-spacing: 5px;">session complete</h2>
+        <p id="summary-text" style="color: #ffffff; font-weight: 200; line-height: 1.8; max-width: 300px; margin-bottom: 40px;"></p>
+        <button onclick="location.reload()" style="background:none; border: 1px solid #ffffff; color:#fff; padding: 12px 25px; border-radius: 25px; cursor:pointer;">return</button>
     </div>
 
     <div id="gold-msg" class="ios-bubble">follow me</div>
@@ -92,15 +86,12 @@
         let started = false;
         let angle = 0;
         const OFFSET_Y = -120;
-        let oceanAudio;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
             gold = createVector(width/2, height*0.4);
             white = createVector(width/2, height/2);
             red = createVector(width/2, height*0.7);
-            oceanAudio = document.getElementById('bg-ocean');
-            oceanAudio.volume = 0.3;
         }
 
         function draw() {
@@ -111,10 +102,15 @@
             let goldY = height/2 + sin(angle * 0.9) * (height * 0.25);
             let autonomousGold = createVector(goldX, goldY);
 
-            if (mouseIsPressed || touches.length > 0) {
+            // SOUND TRIGGER: First interaction starts audio
+            if (mouseIsPressed || (touches && touches.length > 0)) {
                 if(!started) {
                     started = true;
-                    oceanAudio.play().catch(e => console.log("Audio play deferred"));
+                    let audio = document.getElementById('bg-ocean');
+                    audio.volume = 0.4;
+                    // Browsers require a promise catch for play()
+                    audio.play().catch(e => console.log("Interaction required for audio"));
+                    
                     document.getElementById('instruction-overlay').style.opacity = "0";
                     setTimeout(() => { document.getElementById('instruction-overlay').style.display = "none"; }, 1500);
                 }
@@ -130,11 +126,7 @@
 
             if (started && frameCount % 130 === 0) {
                 let type = random() > 0.4 ? 'dessert' : 'diamond';
-                items.push({
-                    pos: createVector(random(60, width-60), random(140, height-140)),
-                    type: type,
-                    life: 450
-                });
+                items.push({ pos: createVector(random(60, width-60), random(140, height-140)), type: type, life: 450 });
             }
 
             for (let i = items.length - 1; i >= 0; i--) {
@@ -150,11 +142,8 @@
                 }
             }
 
-            let distance = dist(white.x, white.y, gold.x, gold.y);
-            let totalFlow = Math.floor(flowFrames / 60);
-            
-            updateUI(distance, totalFlow);
-            drawElements(distance);
+            updateUI(dist(white.x, white.y, gold.x, gold.y), Math.floor(flowFrames / 60));
+            drawElements(dist(white.x, white.y, gold.x, gold.y));
         }
 
         function updateUI(d, flow) {
@@ -163,13 +152,11 @@
             document.getElementById('diamond-count').innerText = `💎: ${diamondsEaten}`;
 
             let whoaMsg = document.getElementById('whoa-msg');
-            
             if (d > 220 && started) {
                 red.x += random(-3.5, 3.5); red.y += random(-3.5, 3.5);
                 document.getElementById('gold-msg').style.display = 'block';
                 document.getElementById('gold-msg').style.left = (gold.x + 20) + 'px';
                 document.getElementById('gold-msg').style.top = (gold.y - 50) + 'px';
-                
                 whoaMsg.style.display = 'block';
                 whoaMsg.style.left = (red.x - 30) + 'px';
                 whoaMsg.style.top = (red.y + 30) + 'px';
@@ -191,8 +178,7 @@
         function drawElements(d) {
             textSize(22); textAlign(CENTER, CENTER);
             items.forEach(item => {
-                let label = item.type === 'dessert' ? '🍰' : '💎';
-                text(label, item.pos.x, item.pos.y);
+                text(item.type === 'dessert' ? '🍰' : '💎', item.pos.x, item.pos.y);
             });
 
             strokeWeight(1.5);
@@ -203,10 +189,10 @@
                          lerp(white.x, red.x, (i+1)/10)+random(-4,4), lerp(white.y, red.y, (i+1)/10)+random(-4,4));
                 }
             } else {
-                stroke(255, 255, 255, 20);
+                stroke(255, 255, 255, 25);
                 line(white.x, white.y, red.x, red.y);
             }
-            stroke(255, 255, 255, 20);
+            stroke(255, 255, 255, 25);
             line(gold.x, gold.y, white.x, white.y);
 
             noStroke();
@@ -217,16 +203,15 @@
         }
 
         function endSession() {
-            oceanAudio.pause();
+            document.getElementById('bg-ocean').pause();
             let flow = Math.floor(flowFrames / 60);
             document.getElementById('end-screen').style.display = 'flex';
             document.getElementById('summary-text').innerText = 
                 `flow attained: ${flow}s\n` +
                 `sustenance (🍰): ${dessertsEaten}\n` +
                 `discipline (💎): ${diamondsEaten}\n\n` +
-                `you have reclaimed your focus.\nnow, return to life with intention.`;
+                `you have reclaimed your focus.`;
         }
-
         function windowResized() { resizeCanvas(windowWidth, windowHeight); }
     </script>
 </body>
