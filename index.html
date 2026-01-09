@@ -39,14 +39,27 @@
 
         #stats-bar {
             position: absolute; top: 40px; width: 100%; display: flex; 
-            justify-content: center; gap: 35px; color: #ffffff; 
-            font-size: 0.8rem; letter-spacing: 1px; 
+            justify-content: center; align-items: center; gap: 35px; color: #ffffff; 
+            font-size: 0.85rem; letter-spacing: 1px; 
             pointer-events: none; opacity: 0; transition: opacity 1s;
+            font-variant-numeric: tabular-nums;
         }
+
+        .stat-item { display: flex; align-items: center; justify-content: center; }
 
         #action-btn-wrapper {
             position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
             z-index: 300; display: none;
+        }
+
+        /* Flash Message for Short Sessions */
+        #flash-msg {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            padding: 20px 40px; border-radius: 40px; color: white;
+            text-align: center; font-size: 0.85rem; letter-spacing: 1px;
+            opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
+            z-index: 4000; border: 0.5px solid rgba(255, 255, 255, 0.2);
         }
 
         .bubble {
@@ -70,6 +83,8 @@
         <button class="btn-ui" onclick="revealGame()">enter flow state</button>
     </div>
 
+    <div id="flash-msg">stay for at least 10s to enter flow state</div>
+
     <audio id="snd" loop playsinline preload="auto">
         <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
     </audio>
@@ -85,9 +100,9 @@
     </div>
 
     <div id="stats-bar">
-        <span id="f-count">flow: 0s</span>
-        <span id="p-count">🍰: 0</span>
-        <span id="d-count">💎: 0</span>
+        <div class="stat-item" id="f-count">flow: 0s</div>
+        <div class="stat-item" id="p-count">🍰: 0</div>
+        <div class="stat-item" id="d-count">💎: 0</div>
     </div>
 
     <div id="action-btn-wrapper">
@@ -110,7 +125,7 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            pixelDensity(displayDensity()); // Ensures sharpness across high-res monitors
+            pixelDensity(displayDensity());
             resetPositions();
         }
 
@@ -139,7 +154,6 @@
         function draw() {
             background(5, 5, 5, 110);
             if (!active) return;
-
             pulse = sin(frameCount * 0.05) * 5;
 
             if (gameRunning) {
@@ -177,10 +191,8 @@
 
         function handleMessages() {
             if (!gameRunning) return;
-
             let dG = dist(white.x, white.y, gold.x, gold.y);
             let dR = dist(white.x, white.y, red.x, red.y);
-
             let gEl = document.getElementById('msg-g');
             if (dG > 180) {
                 gEl.style.opacity = "1";
@@ -188,7 +200,6 @@
                 gEl.style.top = (gold.y - 50) + "px";
                 if (frameCount % 40 === 0 && navigator.vibrate) navigator.vibrate([50, 100, 50]);
             } else { gEl.style.opacity = "0"; }
-
             let rEl = document.getElementById('msg-r');
             if (dR > 110) {
                 rEl.style.opacity = "1";
@@ -202,24 +213,16 @@
             document.getElementById('p-count').innerText = `🍰: ${pEaten}`;
             document.getElementById('d-count').innerText = `💎: ${dEaten}`;
 
-            // Enhanced Reward Visibility for Desktop/Mobile
             textAlign(CENTER, CENTER);
             items.forEach(i => {
                 let char = i.t==='p'?'🍰':'💎';
-                // Glow/Background layer
-                textSize(34);
-                fill(255, 40);
-                text(char, i.pos.x, i.pos.y);
-                // Sharp layer
-                textSize(30);
-                fill(255, 220);
-                text(char, i.pos.x, i.pos.y);
+                textSize(34); fill(255, 40); text(char, i.pos.x, i.pos.y);
+                textSize(30); fill(255, 220); text(char, i.pos.x, i.pos.y);
             });
             
             strokeWeight(1.2); stroke(255, 18);
             line(gold.x, gold.y, white.x, white.y);
             line(white.x, white.y, red.x, red.y);
-
             noStroke();
             fill(212, 175, 55); ellipse(gold.x, gold.y, 30);
             fill(200, 50, 50); ellipse(red.x, red.y, 22);
@@ -228,12 +231,19 @@
         }
 
         function finish() {
+            // Requirement: Play for at least 10 seconds (600 frames)
+            if (frames < 600) {
+                let flash = document.getElementById('flash-msg');
+                flash.style.opacity = "1";
+                setTimeout(() => { flash.style.opacity = "0"; }, 2500);
+                return; // Prevent ending
+            }
+
             gameRunning = false;
             document.getElementById('snd').pause();
             document.getElementById('end-screen').style.display = 'flex';
             document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyou have reclaimed your focus.\nreturn to life.`;
         }
-
         function windowResized() { resizeCanvas(windowWidth, windowHeight); resetPositions(); }
     </script>
 </body>
