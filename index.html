@@ -6,7 +6,12 @@
     <title>The In-Between</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
-        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
+        * { 
+            -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; 
+            touch-action: none; outline: none; 
+            /* Unified Font Style */
+            font-family: sans-serif; font-weight: 200; text-transform: lowercase;
+        }
         body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
         
         #gate, #end-screen {
@@ -16,9 +21,9 @@
 
         .btn-ui {
             background: none; border: 1px solid #ffffff; color: #ffffff; 
-            padding: 10px 28px; border-radius: 30px; cursor: pointer;
-            font-family: sans-serif; font-weight: 200; font-size: 0.7rem; 
-            letter-spacing: 3px; text-transform: lowercase; transition: all 0.6s ease;
+            padding: 14px 32px; border-radius: 30px; cursor: pointer;
+            font-size: 0.85rem; letter-spacing: 3px; 
+            transition: all 0.6s ease;
         }
         .btn-ui:active { background: #ffffff; color: #000000; }
 
@@ -26,20 +31,19 @@
             position: absolute; inset: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: flex-end; z-index: 200;
             pointer-events: none; opacity: 0; transition: opacity 1s ease;
-            padding-bottom: 15vh; /* Pushes text to bottom half */
+            padding-bottom: 18vh;
         }
 
         #instruction-text {
-            color: #ffffff; font-family: -apple-system, sans-serif; font-weight: 300; 
-            font-size: 0.75rem; line-height: 2.8; letter-spacing: 1px; 
-            text-align: center; text-transform: lowercase; margin-bottom: 25px;
+            color: #ffffff; font-size: 0.85rem; line-height: 2.8; 
+            letter-spacing: 1px; text-align: center; margin-bottom: 30px;
         }
 
         #stats-bar {
             position: absolute; top: 40px; width: 100%; display: flex; 
-            justify-content: center; gap: 30px; color: #ffffff; 
-            font-family: sans-serif; font-weight: 300; font-size: 0.7rem; 
-            letter-spacing: 1px; pointer-events: none; text-transform: lowercase; opacity: 0; transition: opacity 1s;
+            justify-content: center; gap: 35px; color: #ffffff; 
+            font-size: 0.8rem; letter-spacing: 1px; 
+            pointer-events: none; opacity: 0; transition: opacity 1s;
         }
 
         #action-btn-wrapper {
@@ -52,7 +56,12 @@
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 0.5px solid rgba(255, 255, 255, 0.2);
             padding: 8px 16px; border-radius: 20px; color: #ffffff;
-            font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.8s;
+            font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.8s;
+        }
+
+        #sum-txt {
+            line-height: 2.4; margin-bottom: 30px; white-space: pre-line; 
+            font-size: 0.95rem; color: #fff; text-align: center;
         }
     </style>
 </head>
@@ -87,7 +96,7 @@
     </div>
 
     <div id="end-screen" style="display:none;">
-        <p id="sum-txt" style="line-height: 2.2; margin-bottom: 20px; font-weight: 200; white-space: pre-line; font-size: 0.85rem; color: #fff; text-align: center;"></p>
+        <p id="sum-txt"></p>
         <button class="btn-ui" onclick="location.reload()">play again</button>
     </div>
 
@@ -101,7 +110,6 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            // Initial positions: Top 25% of the screen to stay clear of instructions
             gold = createVector(width/2, height*0.2);
             white = createVector(width/2, height*0.25);
             red = createVector(width/2, height*0.3);
@@ -129,7 +137,6 @@
             if (!active) return;
 
             if (gameRunning) {
-                // Organic Movement Logic
                 angle += 0.007;
                 let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.32), height/2 + sin(angle*0.6)*(height*0.22));
                 let springG = p5.Vector.lerp(targetG, white, 0.12);
@@ -144,14 +151,12 @@
                     items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
                 }
             } else {
-                // Suspended "Idle" Animation for Start Screen
                 angle += 0.002;
                 gold.y = height*0.2 + sin(angle)*10;
                 white.y = height*0.25 + cos(angle)*5;
                 red.y = height*0.3 + sin(angle*1.2)*8;
             }
 
-            // Shared Logic
             for (let i = items.length-1; i >= 0; i--) {
                 if (dist(white.x, white.y, items[i].pos.x, items[i].pos.y) < 45) {
                     if (items[i].t === 'p') pEaten++; else dEaten++;
