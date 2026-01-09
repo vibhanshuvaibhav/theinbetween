@@ -9,7 +9,6 @@
         * { 
             -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; 
             touch-action: none; outline: none; 
-            /* Unified Font Style */
             font-family: sans-serif; font-weight: 200; text-transform: lowercase;
         }
         body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
@@ -29,9 +28,9 @@
 
         #instruction-container {
             position: absolute; inset: 0; display: flex; flex-direction: column;
-            align-items: center; justify-content: flex-end; z-index: 200;
-            pointer-events: none; opacity: 0; transition: opacity 1s ease;
-            padding-bottom: 18vh;
+            align-items: center; justify-content: center; z-index: 200;
+            pointer-events: none; opacity: 0; transition: opacity 1.5s ease;
+            padding-top: 100px; /* Offset to keep text centered while dots float above */
         }
 
         #instruction-text {
@@ -110,9 +109,14 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            gold = createVector(width/2, height*0.2);
-            white = createVector(width/2, height*0.25);
-            red = createVector(width/2, height*0.3);
+            resetPositions();
+        }
+
+        function resetPositions() {
+            // Positions relative to the center to stay elegantly above text
+            gold = createVector(width/2, height/2 - 180);
+            white = createVector(width/2, height/2 - 140);
+            red = createVector(width/2, height/2 - 100);
         }
 
         function revealGame() {
@@ -151,10 +155,11 @@
                     items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
                 }
             } else {
+                // Gentle idle float right above the instruction text
                 angle += 0.002;
-                gold.y = height*0.2 + sin(angle)*10;
-                white.y = height*0.25 + cos(angle)*5;
-                red.y = height*0.3 + sin(angle*1.2)*8;
+                gold.y = (height/2 - 180) + sin(angle) * 10;
+                white.y = (height/2 - 140) + cos(angle) * 5;
+                red.y = (height/2 - 100) + sin(angle * 1.2) * 8;
             }
 
             for (let i = items.length-1; i >= 0; i--) {
@@ -212,7 +217,7 @@
             document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyou have reclaimed your focus.\nreturn to life.`;
         }
 
-        function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+        function windowResized() { resizeCanvas(windowWidth, windowHeight); resetPositions(); }
     </script>
 </body>
 </html>
