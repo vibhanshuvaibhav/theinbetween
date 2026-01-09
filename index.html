@@ -30,7 +30,7 @@
             position: absolute; inset: 0; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 200;
             pointer-events: none; opacity: 0; transition: opacity 1.5s ease;
-            padding-top: 100px; /* Offset to keep text centered while dots float above */
+            padding-top: 100px; 
         }
 
         #instruction-text {
@@ -78,7 +78,7 @@
         <div id="instruction-text">
             follow the gold; it is your purpose<br>
             embrace the gifts found in the rhythm<br>
-            protect the red; it is your peace<br>
+            protect the red; it's your peace<br>
             target 100s to enter flow state
         </div>
         <button id="start-btn" class="btn-ui" style="pointer-events: auto;" onclick="begin()">start</button>
@@ -105,6 +105,7 @@
     <script>
         let gold, white, red, items = [];
         let frames = 0, pEaten = 0, dEaten = 0, active = false, gameRunning = false, angle = 0;
+        let pulse = 0;
         const Y_OFF = -120;
 
         function setup() {
@@ -113,7 +114,6 @@
         }
 
         function resetPositions() {
-            // Positions relative to the center to stay elegantly above text
             gold = createVector(width/2, height/2 - 180);
             white = createVector(width/2, height/2 - 140);
             red = createVector(width/2, height/2 - 100);
@@ -140,6 +140,8 @@
             background(5, 5, 5, 110);
             if (!active) return;
 
+            pulse = sin(frameCount * 0.05) * 5;
+
             if (gameRunning) {
                 angle += 0.007;
                 let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.32), height/2 + sin(angle*0.6)*(height*0.22));
@@ -155,7 +157,6 @@
                     items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
                 }
             } else {
-                // Gentle idle float right above the instruction text
                 angle += 0.002;
                 gold.y = (height/2 - 180) + sin(angle) * 10;
                 white.y = (height/2 - 140) + cos(angle) * 5;
@@ -179,7 +180,8 @@
             document.getElementById('p-count').innerText = `🍰: ${pEaten}`;
             document.getElementById('d-count').innerText = `💎: ${dEaten}`;
 
-            if (d > 215 && gameRunning) {
+            // Restore dialogue logic
+            if (gameRunning && d > 215) {
                 red.x += random(-1.5, 1.5); red.y += random(-1.5, 1.5); 
                 pop('g-msg', gold.x, gold.y - 50, true);
                 pop('w-msg', red.x, red.y + 45, true);
@@ -200,13 +202,19 @@
             noStroke();
             fill(212, 175, 55); ellipse(gold.x, gold.y, 30);
             fill(200, 50, 50); ellipse(red.x, red.y, 22);
-            fill(255); ellipse(white.x, white.y, 16);
-            fill(255, 25); ellipse(white.x, white.y, 42);
+            
+            // White dot with breathing pulse
+            fill(255); ellipse(white.x, white.y, gameRunning ? 16 : 16 + pulse);
+            fill(255, 25); ellipse(white.x, white.y, gameRunning ? 42 : 42 + pulse);
         }
 
         function pop(id, x, y, show) {
             let e = document.getElementById(id);
-            if (show) { e.style.opacity = '1'; e.style.left = constrain(x, 40, width-100)+'px'; e.style.top = constrain(y, 40, height-70)+'px'; } 
+            if (show) { 
+                e.style.opacity = '1'; 
+                e.style.left = constrain(x, 40, width-100)+'px'; 
+                e.style.top = constrain(y, 40, height-70)+'px'; 
+            } 
             else { e.style.opacity = '0'; }
         }
 
