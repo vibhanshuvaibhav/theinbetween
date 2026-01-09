@@ -24,8 +24,9 @@
 
         #instruction-container {
             position: absolute; inset: 0; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 200;
+            align-items: center; justify-content: flex-end; z-index: 200;
             pointer-events: none; opacity: 0; transition: opacity 1s ease;
+            padding-bottom: 15vh; /* Pushes text to bottom half */
         }
 
         #instruction-text {
@@ -100,9 +101,10 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            gold = createVector(width/2, height*0.3);
-            white = createVector(width/2, height/2);
-            red = createVector(width/2, height*0.7);
+            // Initial positions: Top 25% of the screen to stay clear of instructions
+            gold = createVector(width/2, height*0.2);
+            white = createVector(width/2, height*0.25);
+            red = createVector(width/2, height*0.3);
         }
 
         function revealGame() {
@@ -126,20 +128,30 @@
             background(5, 5, 5, 110);
             if (!active) return;
 
-            angle += 0.007;
-            let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.32), height/2 + sin(angle*0.6)*(height*0.22));
-            let springG = p5.Vector.lerp(targetG, white, 0.12);
-            gold.lerp(springG, 0.085);
+            if (gameRunning) {
+                // Organic Movement Logic
+                angle += 0.007;
+                let targetG = createVector(width/2 + cos(angle*0.8)*(width*0.32), height/2 + sin(angle*0.6)*(height*0.22));
+                let springG = p5.Vector.lerp(targetG, white, 0.12);
+                gold.lerp(springG, 0.085);
 
-            if (gameRunning && (mouseIsPressed || (touches && touches.length > 0))) {
-                white.lerp(createVector(mouseX, mouseY + Y_OFF), 0.15);
+                if (mouseIsPressed || (touches && touches.length > 0)) {
+                    white.lerp(createVector(mouseX, mouseY + Y_OFF), 0.15);
+                }
+                red.lerp(white, 0.04);
+
+                if (frameCount % 145 === 0) {
+                    items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
+                }
+            } else {
+                // Suspended "Idle" Animation for Start Screen
+                angle += 0.002;
+                gold.y = height*0.2 + sin(angle)*10;
+                white.y = height*0.25 + cos(angle)*5;
+                red.y = height*0.3 + sin(angle*1.2)*8;
             }
-            red.lerp(white, 0.04);
 
-            if (gameRunning && frameCount % 145 === 0) {
-                items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
-            }
-
+            // Shared Logic
             for (let i = items.length-1; i >= 0; i--) {
                 if (dist(white.x, white.y, items[i].pos.x, items[i].pos.y) < 45) {
                     if (items[i].t === 'p') pEaten++; else dEaten++;
@@ -171,7 +183,7 @@
             items.forEach(i => text(i.t==='p'?'🍰':'💎', i.pos.x, i.pos.y));
             
             strokeWeight(1.2);
-            stroke(255, d > 215 ? 45 : 18);
+            stroke(255, d > 215 && gameRunning ? 45 : 18);
             line(gold.x, gold.y, white.x, white.y);
             line(white.x, white.y, red.x, red.y);
 
