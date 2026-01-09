@@ -2,47 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>The In-Between — Rest</title>
+<title>The In-Between — Garden</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html,body{
   margin:0;
   padding:0;
-  background:#0b0f0d;
+  background:#cfe8ff;
   overflow:hidden;
   touch-action:none;
   font-family:'Playfair Display',serif;
 }
 canvas{display:block;}
-.ui{
-  position:absolute;width:100%;text-align:center;
-  color:rgba(255,255,255,0.75);
-  pointer-events:none;
-}
-#hint{top:14px;font-size:15px;letter-spacing:0.06em;}
+.ui{position:absolute;width:100%;text-align:center;color:#333;pointer-events:none;}
+#hint{top:12px;font-size:15px;letter-spacing:0.05em;}
 #done{top:50%;transform:translateY(-50%);font-size:22px;display:none;}
 #privacy{bottom:12px;font-size:11px;opacity:0.4;}
-#reset{
-  position:absolute;bottom:36px;width:100%;
-  text-align:center;font-size:13px;opacity:0.6;
-  cursor:pointer;pointer-events:auto;display:none;
-}
 </style>
 </head>
 <body>
 
 <canvas id="canvas"></canvas>
-<div class="ui" id="hint">help crow (mind) have some water (rest)</div>
+<div class="ui" id="hint">help crow (mind) have some water (rest) — put the stones in the jar</div>
 <div class="ui" id="done">well done. let’s get back to work.</div>
-<div id="reset" onclick="reset()">reset</div>
 <div class="ui" id="privacy">no tracking · no data · nothing stored</div>
 
 <script>
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 let w,h,dpr;
-
 function resize(){
  dpr=window.devicePixelRatio||1;
  w=innerWidth;h=innerHeight;
@@ -52,41 +41,35 @@ function resize(){
 }
 window.onresize=resize;resize();
 
-const jar={x:()=>w/2,y:()=>h*0.42,w:120,h:220,water:0};
-let stones=[];
 const TOTAL=60;
+let stones=[];
+const jar={x:()=>w/2,y:()=>h*0.55,w:130,h:220,water:0};
+let crow={x:()=>w*0.85,y:()=>h*0.15,blink:0,fly:false};
 
 function init(){
  stones=[];
  for(let i=0;i<TOTAL;i++){
-  const side=i<30?-1:1;
   stones.push({
-   x:jar.x()+side*120,
-   y:h*0.6+(i%30)*10,
-   r:7,
+   x:40+(i%10)*30,
+   y:h*0.7+Math.floor(i/10)*26,
+   r:10,
    in:false
   });
  }
  jar.water=0;
+ crow.fly=false;
  document.getElementById("done").style.display="none";
- document.getElementById("reset").style.display="none";
 }
 init();
 
 let drag=null;
-
 canvas.onpointerdown=e=>{
- startSound();
  const x=e.clientX,y=e.clientY;
  for(const s of stones){
   if(!s.in && Math.hypot(x-s.x,y-s.y)<s.r+8){drag=s;break;}
  }
 };
-
-canvas.onpointermove=e=>{
- if(drag){drag.x=e.clientX;drag.y=e.clientY;}
-};
-
+canvas.onpointermove=e=>{if(drag){drag.x=e.clientX;drag.y=e.clientY;}};
 canvas.onpointerup=()=>{
  if(drag){
   if(
@@ -102,68 +85,74 @@ canvas.onpointerup=()=>{
  drag=null;
 };
 
-function draw(){
- ctx.clearRect(0,0,w,h);
-
- // sky
- ctx.fillStyle="#0b0f0d";
- ctx.fillRect(0,0,w,h);
-
- // ground
- ctx.fillStyle="#123a2a";
+function drawSky(){
+ const g=ctx.createLinearGradient(0,0,0,h);
+ g.addColorStop(0,"#cfe8ff");
+ g.addColorStop(1,"#fefefe");
+ ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+}
+function drawTrees(){
+ ctx.fillStyle="rgba(50,120,70,0.5)";
+ for(let i=0;i<6;i++){
+  ctx.beginPath();
+  ctx.arc(i*w/5,h*0.68,80,Math.PI,Math.PI*2);
+  ctx.fill();
+ }
+}
+function drawGround(){
+ ctx.fillStyle="#6fbf7f";
  ctx.fillRect(0,h*0.7,w,h);
+}
 
- // jar
- ctx.strokeStyle="rgba(200,200,200,0.6)";
+function drawJar(){
+ ctx.strokeStyle="rgba(180,180,180,0.8)";
  ctx.lineWidth=2;
  ctx.strokeRect(jar.x()-jar.w/2,jar.y()-jar.h/2,jar.w,jar.h);
 
- // water
- const waterHeight=(jar.water/TOTAL)*jar.h;
- ctx.fillStyle="rgba(100,160,180,0.6)";
- ctx.fillRect(jar.x()-jar.w/2,jar.y()+jar.h/2-waterHeight,jar.w,waterHeight);
+ const wh=(jar.water/TOTAL)*jar.h;
+ ctx.fillStyle="rgba(120,180,200,0.6)";
+ ctx.fillRect(jar.x()-jar.w/2,jar.y()+jar.h/2-wh,jar.w,wh);
+}
 
- // crow
- ctx.fillStyle="rgba(0,0,0,0.7)";
+function drawStone(s){
+ const g=ctx.createRadialGradient(s.x-3,s.y-3,2,s.x,s.y,s.r);
+ g.addColorStop(0,"#eee");
+ g.addColorStop(1,"#999");
+ ctx.fillStyle=g;
  ctx.beginPath();
- ctx.arc(jar.x(),jar.y()-jar.h/2-16,8,0,Math.PI*2);
+ ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
  ctx.fill();
+}
 
- // stones
- for(const s of stones){
-  if(s.in)continue;
-  ctx.fillStyle="rgba(190,190,190,0.9)";
-  ctx.beginPath();
-  ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-  ctx.fill();
- }
+function drawCrow(){
+ crow.blink=(crow.blink+1)%200;
+ const eye=crow.blink<5?2:6;
+ ctx.fillStyle="#222";
+ ctx.beginPath();
+ ctx.arc(crow.x(),crow.y(),10,0,Math.PI*2);
+ ctx.fill();
+ ctx.fillStyle="#fff";
+ ctx.beginPath();
+ ctx.arc(crow.x()+4,crow.y()-2,eye,0,Math.PI*2);
+ ctx.fill();
+}
+
+function update(){
+ drawSky();
+ drawTrees();
+ drawGround();
+ drawJar();
+ drawCrow();
+
+ for(const s of stones){ if(!s.in) drawStone(s); }
 
  if(jar.water>=TOTAL){
   document.getElementById("done").style.display="block";
-  document.getElementById("reset").style.display="block";
  }
 
- requestAnimationFrame(draw);
+ requestAnimationFrame(update);
 }
-draw();
-
-function reset(){init();}
-
-/* soft ambient tone */
-let audioStarted=false;
-let ctxAudio,osc,gain;
-function startSound(){
- if(audioStarted)return;
- audioStarted=true;
- ctxAudio=new AudioContext();
- osc=ctxAudio.createOscillator();
- osc.frequency.value=120;
- osc.type="sine";
- gain=ctxAudio.createGain();
- gain.gain.value=0.04;
- osc.connect(gain).connect(ctxAudio.destination);
- osc.start();
-}
+update();
 </script>
 </body>
 </html>
