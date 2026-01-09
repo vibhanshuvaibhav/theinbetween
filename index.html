@@ -9,16 +9,17 @@
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; outline: none; }
         body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
         
-        #gate {
+        #gate, #end-screen {
             position: fixed; inset: 0; background: #050505; z-index: 2000;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
         }
 
         .btn-ui {
             background: none; border: 1px solid #ffffff; color: #ffffff; 
-            padding: 12px 30px; border-radius: 30px; cursor: pointer;
+            padding: 12px 35px; border-radius: 30px; cursor: pointer;
             font-family: sans-serif; font-weight: 200; font-size: 0.75rem; 
-            letter-spacing: 3px; text-transform: lowercase; transition: all 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+            letter-spacing: 3px; text-transform: lowercase; transition: all 0.6s ease;
+            margin-top: 20px;
         }
         .btn-ui:active { background: #ffffff; color: #000000; }
 
@@ -26,25 +27,19 @@
             position: absolute; top: 18%; width: 100%; text-align: center; color: #ffffff;
             font-family: -apple-system, sans-serif; font-weight: 300; font-size: 0.85rem; 
             line-height: 2.8; letter-spacing: 1px; z-index: 200; pointer-events: none; 
-            opacity: 0; transition: opacity 2s ease-in-out; text-transform: lowercase;
+            opacity: 0; transition: opacity 1.5s ease; text-transform: lowercase;
         }
 
         #stats-bar {
             position: absolute; top: 40px; width: 100%; display: flex; 
             justify-content: center; gap: 30px; color: #ffffff; 
             font-family: sans-serif; font-weight: 300; font-size: 0.7rem; 
-            letter-spacing: 1px; pointer-events: none; text-transform: lowercase; opacity: 0.6;
+            letter-spacing: 1px; pointer-events: none; text-transform: lowercase; opacity: 0; transition: opacity 1s;
         }
 
         #quit-btn {
             position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
-            z-index: 300;
-        }
-
-        #end-screen {
-            position: fixed; inset: 0; background: #050505; display: none; 
-            flex-direction: column; align-items: center; justify-content: center;
-            z-index: 3000; text-align: center; color: #ffffff; font-family: sans-serif;
+            z-index: 300; display: none;
         }
 
         .bubble {
@@ -52,19 +47,19 @@
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 0.5px solid rgba(255, 255, 255, 0.2);
             padding: 8px 16px; border-radius: 20px; color: #ffffff;
-            font-size: 11px; pointer-events: none; opacity: 0; z-index: 100;
-            transition: opacity 0.8s ease-in-out;
+            font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.8s;
         }
     </style>
 </head>
 <body>
 
     <div id="gate">
-        <button class="btn-ui" onclick="start()">enter flow state</button>
+        <button id="gate-btn" class="btn-ui" onclick="showInstructions()">enter flow state</button>
+        <button id="start-btn" class="btn-ui" style="display:none;" onclick="begin()">start</button>
     </div>
 
     <audio id="snd" loop playsinline preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2523/2523-preview.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
     </audio>
 
     <div id="instruction-overlay">
@@ -80,11 +75,11 @@
         <span id="d-count">💎: 0</span>
     </div>
 
-    <button id="quit-btn" class="btn-ui" style="display:none;" onclick="finish()">end session</button>
+    <button id="quit-btn" class="btn-ui" onclick="finish()">end session</button>
 
-    <div id="end-screen">
-        <p id="sum-txt" style="line-height: 2.2; margin-bottom: 45px; font-weight: 200; white-space: pre-line; font-size: 0.9rem;"></p>
-        <button class="btn-ui" onclick="location.reload()">return</button>
+    <div id="end-screen" style="display:none;">
+        <p id="sum-txt" style="line-height: 2.2; margin-bottom: 20px; font-weight: 200; white-space: pre-line; font-size: 0.9rem; color: #fff; text-align: center;"></p>
+        <button class="btn-ui" onclick="location.reload()">play again</button>
     </div>
 
     <div id="g-msg" class="bubble">follow me</div>
@@ -92,7 +87,7 @@
 
     <script>
         let gold, white, red, items = [];
-        let frames = 0, pEaten = 0, dEaten = 0, active = false, angle = 0;
+        let frames = 0, pEaten = 0, dEaten = 0, active = false, gameRunning = false, angle = 0;
         const Y_OFF = -120;
 
         function setup() {
@@ -102,19 +97,24 @@
             red = createVector(width/2, height*0.7);
         }
 
-        function start() {
-            active = true;
-            document.getElementById('gate').style.display = 'none';
-            document.getElementById('quit-btn').style.display = 'block';
-            
-            let inst = document.getElementById('instruction-overlay');
-            inst.style.opacity = '1';
+        function showInstructions() {
+            document.getElementById('gate-btn').style.display = 'none';
+            document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('instruction-overlay').style.opacity = '1';
             
             let a = document.getElementById('snd');
-            a.volume = 0.25; 
+            a.volume = 0.2;
             a.play().catch(()=>{});
             
-            setTimeout(() => { inst.style.opacity = '0'; }, 5500);
+            active = true; // Shows dots in background
+        }
+
+        function begin() {
+            gameRunning = true;
+            document.getElementById('gate').style.display = 'none';
+            document.getElementById('quit-btn').style.display = 'block';
+            document.getElementById('stats-bar').style.opacity = '0.6';
+            setTimeout(() => { document.getElementById('instruction-overlay').style.opacity = '0'; }, 3000);
         }
 
         function draw() {
@@ -126,12 +126,12 @@
             let springG = p5.Vector.lerp(targetG, white, 0.12);
             gold.lerp(springG, 0.085);
 
-            if (mouseIsPressed || (touches && touches.length > 0)) {
+            if (gameRunning && (mouseIsPressed || (touches && touches.length > 0))) {
                 white.lerp(createVector(mouseX, mouseY + Y_OFF), 0.15);
             }
             red.lerp(white, 0.04);
 
-            if (frameCount % 145 === 0) {
+            if (gameRunning && frameCount % 145 === 0) {
                 items.push({pos: createVector(random(60, width-60), random(140, height-140)), t: random()>0.4?'p':'d', l: 550});
             }
 
@@ -152,12 +152,12 @@
             document.getElementById('p-count').innerText = `🍰: ${pEaten}`;
             document.getElementById('d-count').innerText = `💎: ${dEaten}`;
 
-            if (d > 215) {
+            if (d > 215 && gameRunning) {
                 red.x += random(-1.5, 1.5); red.y += random(-1.5, 1.5); 
                 pop('g-msg', gold.x, gold.y - 50, true);
                 pop('w-msg', red.x, red.y + 45, true);
             } else {
-                frames++;
+                if(gameRunning) frames++;
                 pop('g-msg', 0, 0, false);
                 pop('w-msg', 0, 0, false);
             }
@@ -179,19 +179,15 @@
 
         function pop(id, x, y, show) {
             let e = document.getElementById(id);
-            if (show) {
-                e.style.opacity = '1';
-                e.style.left = constrain(x, 40, width-100)+'px'; 
-                e.style.top = constrain(y, 40, height-70)+'px';
-            } else {
-                e.style.opacity = '0';
-            }
+            if (show) { e.style.opacity = '1'; e.style.left = constrain(x, 40, width-100)+'px'; e.style.top = constrain(y, 40, height-70)+'px'; } 
+            else { e.style.opacity = '0'; }
         }
 
         function finish() {
+            gameRunning = false;
             document.getElementById('snd').pause();
             document.getElementById('end-screen').style.display = 'flex';
-            document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyou have reclaimed your focus.\nyreturn to life.`;
+            document.getElementById('sum-txt').innerText = `you stayed in the flow for ${Math.floor(frames/60)}s.\n\nyou gathered ${pEaten} moments of sweetness\nand ${dEaten} moments of clarity.\n\nyou have reclaimed your focus.\nreturn to life.`;
         }
 
         function windowResized() { resizeCanvas(windowWidth, windowHeight); }
