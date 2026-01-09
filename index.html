@@ -76,7 +76,7 @@
 
     <div id="instruction-container">
         <div id="instruction-text">
-            follow the gold; it is your purpose<br>
+            follow the gold; it's your purpose<br>
             embrace the gifts found in the rhythm<br>
             protect the red; it's your peace<br>
             target 100s to enter flow state
@@ -110,6 +110,7 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
+            pixelDensity(displayDensity()); // Ensures sharpness across high-res monitors
             resetPositions();
         }
 
@@ -148,7 +149,7 @@
                 gold.lerp(springG, 0.085);
 
                 if (mouseIsPressed || (touches && touches.length > 0)) {
-                    white.lerp(createVector(mouseX, mouseY + Y_OFF), 0.15);
+                    white.lerp(createVector(mouseX, mouseY + (windowWidth > 800 ? 0 : Y_OFF)), 0.15);
                 }
                 red.lerp(white, 0.04);
 
@@ -185,24 +186,15 @@
                 gEl.style.opacity = "1";
                 gEl.style.left = constrain(gold.x - 40, 20, width-100) + "px";
                 gEl.style.top = (gold.y - 50) + "px";
-                
-                // RECALIBRATION VIBRATION: Heartbeat pattern
-                if (frameCount % 40 === 0 && navigator.vibrate) {
-                    navigator.vibrate([50, 100, 50]);
-                }
-            } else {
-                gEl.style.opacity = "0";
-            }
+                if (frameCount % 40 === 0 && navigator.vibrate) navigator.vibrate([50, 100, 50]);
+            } else { gEl.style.opacity = "0"; }
 
             let rEl = document.getElementById('msg-r');
             if (dR > 110) {
                 rEl.style.opacity = "1";
                 rEl.style.left = constrain(red.x - 40, 20, width-100) + "px";
                 rEl.style.top = (red.y + 40) + "px";
-            } else {
-                rEl.style.opacity = "0";
-                frames++; // Flow continues as long as red is safe
-            }
+            } else { rEl.style.opacity = "0"; frames++; }
         }
 
         function render() {
@@ -210,8 +202,19 @@
             document.getElementById('p-count').innerText = `🍰: ${pEaten}`;
             document.getElementById('d-count').innerText = `💎: ${dEaten}`;
 
-            textSize(22); textAlign(CENTER, CENTER);
-            items.forEach(i => text(i.t==='p'?'🍰':'💎', i.pos.x, i.pos.y));
+            // Enhanced Reward Visibility for Desktop/Mobile
+            textAlign(CENTER, CENTER);
+            items.forEach(i => {
+                let char = i.t==='p'?'🍰':'💎';
+                // Glow/Background layer
+                textSize(34);
+                fill(255, 40);
+                text(char, i.pos.x, i.pos.y);
+                // Sharp layer
+                textSize(30);
+                fill(255, 220);
+                text(char, i.pos.x, i.pos.y);
+            });
             
             strokeWeight(1.2); stroke(255, 18);
             line(gold.x, gold.y, white.x, white.y);
