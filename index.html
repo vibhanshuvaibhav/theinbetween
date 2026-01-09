@@ -6,45 +6,38 @@
     <title>The In-Between | Focused Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            touch-action: none;
-        }
-
-        body { 
-            margin: 0; padding: 0; background: #050505; 
-            overflow: hidden; cursor: crosshair; 
-        }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+        body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
         
         #timer-container {
             position: absolute; top: 40px; width: 100%;
             text-align: center; color: rgba(255, 255, 255, 0.1);
             font-family: 'Inter', sans-serif; font-weight: 200;
-            font-size: 2rem; letter-spacing: 6px; pointer-events: none;
+            font-size: 1.8rem; letter-spacing: 6px; pointer-events: none;
+        }
+
+        #start-instruction {
+            position: absolute; top: 50%; width: 100%;
+            text-align: center; color: #fff;
+            font-family: 'Inter', sans-serif; font-weight: 200;
+            font-size: 0.9rem; letter-spacing: 3px;
+            transform: translateY(-50%); z-index: 200;
+            transition: opacity 1s ease;
         }
 
         .ios-bubble {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            position: absolute; background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             border: 0.5px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-            font-size: 14px;
-            pointer-events: none;
-            display: none;
-            z-index: 100;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            padding: 8px 16px; border-radius: 20px; color: white;
+            font-family: -apple-system, sans-serif; font-size: 13px;
+            pointer-events: none; display: none; z-index: 100;
         }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
+    <div id="start-instruction">GUIDE WHITE TO FOLLOW GOLD</div>
     <div id="timer-container">00:00</div>
     <div id="gold-msg" class="ios-bubble">follow me</div>
     <div id="red-msg" class="ios-bubble">thankyou</div>
@@ -52,66 +45,70 @@
     <script>
         let gold, white, red;
         let angle = 0;
-        let goldMsg, redMsg, timerElement;
+        let goldMsg, redMsg, timerElement, startIns;
         let framesInZone = 0;
         let wasInZone = true;
-        const OFFSET_Y = -100; // Even more offset for maximum visibility
+        let started = false;
+        const OFFSET_Y = -120; 
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            gold = createVector(width / 2, height / 2);
-            white = createVector(width / 2, height / 2);
-            red = createVector(width / 2, height / 2);
+            // Initial positioning so they don't vanish
+            gold = createVector(width / 2, height * 0.3);
+            white = createVector(width / 2, height * 0.5);
+            red = createVector(width / 2, height * 0.7);
+            
             goldMsg = document.getElementById('gold-msg');
             redMsg = document.getElementById('red-msg');
             timerElement = document.getElementById('timer-container');
+            startIns = document.getElementById('start-instruction');
         }
 
         function draw() {
             background(5, 5, 5, 80); 
 
-            // 1. GOLD (Leader)
+            // 1. GOLD (Ambition)
             angle += 0.005;
             gold.x = width/2 + cos(angle * 0.7) * (width * 0.3);
             gold.y = height/2 + sin(angle * 0.9) * (height * 0.25);
 
-            // 2. WHITE (You - Offset above finger)
-            let targetWhite = createVector(mouseX, mouseY + OFFSET_Y);
-            white.lerp(targetWhite, 0.1); 
+            // 2. WHITE (The User)
+            if (mouseIsPressed || (touches.length > 0)) {
+                started = true;
+                startIns.style.opacity = "0";
+                let targetWhite = createVector(mouseX, mouseY + OFFSET_Y);
+                white.lerp(targetWhite, 0.1);
+            }
 
-            // 3. RED (Follower)
-            red.lerp(white, 0.05); 
+            // 3. RED (Reality) - Detached but emotionally tethered
+            // It trails White, but with more "weight" and lag
+            red.lerp(white, 0.03); 
 
-            // LOGIC & HAPTICS
             let distance = dist(white.x, white.y, gold.x, gold.y);
             let totalSeconds = Math.floor(framesInZone / 60);
             
-            if (distance > 220) {
-                // SYNC BROKEN
-                if (wasInZone) {
-                    vibrateBreak(); // Sharp haptic for break
-                    wasInZone = false;
-                }
+            if (distance > 200) {
+                // RED SUFFERS
+                if (wasInZone) { vibrateBreak(); wasInZone = false; }
+                
+                // Add jitter to Red dot to show suffering
+                red.x += random(-2, 2);
+                red.y += random(-2, 2);
+                
                 goldMsg.style.display = 'block';
                 goldMsg.style.left = (gold.x + 20) + 'px';
                 goldMsg.style.top = (gold.y - 50) + 'px';
                 timerElement.style.color = "rgba(255, 255, 255, 0.05)";
-            } else {
-                // IN SYNC
+            } else if (started) {
                 if (!wasInZone) wasInZone = true;
-                
-                // Pulsing vibration every 60 frames (1 second) to signify sync
-                if (frameCount % 60 === 0) {
-                    vibrateSync();
-                }
+                if (frameCount % 60 === 0) vibrateSync();
 
                 goldMsg.style.display = 'none';
                 framesInZone++;
                 updateTimer(totalSeconds);
             }
 
-            // Thankyou logic
-            if (totalSeconds >= 10 && distance <= 220) {
+            if (totalSeconds >= 10 && distance <= 200) {
                 redMsg.style.display = 'block';
                 redMsg.style.left = (red.x + 20) + 'px';
                 redMsg.style.top = (red.y + 20) + 'px';
@@ -119,20 +116,11 @@
                 redMsg.style.display = 'none';
             }
 
-            drawDots();
+            drawVisuals(distance);
         }
 
-        function vibrateSync() {
-            if ("vibrate" in navigator) {
-                navigator.vibrate(15); // Tiny tap for sync
-            }
-        }
-
-        function vibrateBreak() {
-            if ("vibrate" in navigator) {
-                navigator.vibrate([40, 30, 40]); // Sharp double-tap for error
-            }
-        }
+        function vibrateSync() { if ("vibrate" in navigator) navigator.vibrate(10); }
+        function vibrateBreak() { if ("vibrate" in navigator) navigator.vibrate([50, 50, 50]); }
 
         function updateTimer(s) {
             let mins = Math.floor(s / 60).toString().padStart(2, '0');
@@ -141,32 +129,41 @@
             timerElement.style.color = "rgba(255, 255, 255, 0.2)";
         }
 
-        function drawDots() {
+        function drawVisuals(d) {
+            // Tether Lines
+            strokeWeight(1);
+            if (d > 200) {
+                // Jagged line for suffering
+                stroke(200, 50, 50, 80);
+                for (let i = 0; i < 10; i++) {
+                    let x1 = lerp(white.x, red.x, i/10) + random(-3,3);
+                    let y1 = lerp(white.y, red.y, i/10) + random(-3,3);
+                    let x2 = lerp(white.x, red.x, (i+1)/10) + random(-3,3);
+                    let y2 = lerp(white.y, red.y, (i+1)/10) + random(-3,3);
+                    line(x1, y1, x2, y2);
+                }
+            } else {
+                stroke(255, 255, 255, 10);
+                line(white.x, white.y, red.x, red.y);
+            }
+            
+            line(gold.x, gold.y, white.x, white.y);
+
             noStroke();
             // Gold
-            fill(212, 175, 55); 
-            ellipse(gold.x, gold.y, 28, 28);
-            fill(212, 175, 55, 15);
-            ellipse(gold.x, gold.y, 60, 60);
+            fill(212, 175, 55); ellipse(gold.x, gold.y, 28, 28);
+            fill(212, 175, 55, 20); ellipse(gold.x, gold.y, 60, 60);
 
-            // Red
-            fill(200, 50, 50);
-            ellipse(red.x, red.y, 20, 20);
+            // Red (The Sufferer)
+            if (d > 200) fill(255, 0, 0); else fill(200, 50, 50);
+            ellipse(red.x, red.y, 22, 22);
 
             // White
-            fill(255);
-            ellipse(white.x, white.y, 16, 16);
-            fill(255, 255, 255, 30);
-            ellipse(white.x, white.y, 40, 40);
-
-            stroke(255, 255, 255, 5);
-            line(gold.x, gold.y, white.x, white.y);
-            line(white.x, white.y, red.x, red.y);
+            fill(255); ellipse(white.x, white.y, 16, 16);
+            fill(255, 255, 255, 30); ellipse(white.x, white.y, 45, 45);
         }
 
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
+        function windowResized() { resizeCanvas(windowWidth, windowHeight); }
     </script>
 </body>
 </html>
