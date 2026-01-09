@@ -2,107 +2,179 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>The In-Between — Sand Field</title>
+  <title>The In-Between — Hourglass</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     html, body {
       margin: 0;
       padding: 0;
+      background: #000;
       overflow: hidden;
-      background: #f3efe7;
       touch-action: none;
+      color: rgba(255, 215, 130, 0.7);
+      font-family: system-ui, sans-serif;
     }
     canvas {
       display: block;
     }
     .hint {
       position: absolute;
-      bottom: 20px;
+      bottom: 64px;
       width: 100%;
       text-align: center;
-      font-family: system-ui, sans-serif;
-      font-size: 12px;
-      color: rgba(0,0,0,0.35);
+      font-size: 14px;
+      letter-spacing: 0.1em;
       pointer-events: none;
-      letter-spacing: 0.15em;
+    }
+    .restart {
+      position: absolute;
+      bottom: 24px;
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    .privacy {
+      position: absolute;
+      top: 12px;
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      opacity: 0.4;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <div class="hint">slow touch</div>
+  <div class="privacy">no tracking. no data stored. nothing leaves your device.</div>
+  <div class="hint">let’s put the sand where they belong</div>
+  <div class="restart" onclick="restart()">restart</div>
 
   <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    let w, h;
+    let w, h, dpr;
     function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
+      dpr = window.devicePixelRatio || 1;
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     window.addEventListener("resize", resize);
     resize();
 
-    const GRAIN_COUNT = Math.floor((w * h) / 8000);
     const grains = [];
+    const GRAIN_COUNT = 180;
 
-    for (let i = 0; i < GRAIN_COUNT; i++) {
-      grains.push({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        ox: Math.random() * w,
-        oy: Math.random() * h,
-        vx: 0,
-        vy: 0
-      });
+    function initGrains() {
+      grains.length = 0;
+      for (let i = 0; i < GRAIN_COUNT; i++) {
+        grains.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: 0,
+          vy: 0
+        });
+      }
     }
 
-    let touch = { x: null, y: null, active: false };
+    initGrains();
 
-    function setTouch(x, y) {
-      touch.x = x;
-      touch.y = y;
+    let touch = { x: 0, y: 0, active: false };
+
+    canvas.addEventListener("pointerdown", e => {
       touch.active = true;
-    }
+      touch.x = e.clientX;
+      touch.y = e.clientY;
+    });
+
+    canvas.addEventListener("pointermove", e => {
+      if (!touch.active) return;
+      touch.x = e.clientX;
+      touch.y = e.clientY;
+    });
 
     function clearTouch() {
       touch.active = false;
     }
 
-    canvas.addEventListener("pointerdown", e => setTouch(e.clientX, e.clientY));
-    canvas.addEventListener("pointermove", e => {
-      if (touch.active) setTouch(e.clientX, e.clientY);
-    });
     canvas.addEventListener("pointerup", clearTouch);
-    canvas.addEventListener("pointercancel", clearTouch);
     canvas.addEventListener("pointerleave", clearTouch);
+    canvas.addEventListener("pointercancel", clearTouch);
+
+    function inHourglass(x, y) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const top = cy - 180;
+      const bottom = cy + 180;
+      if (y < top || y > bottom) return false;
+      const t = Math.abs((y - cy) / 180);
+      const width = 120 * (1 - t);
+      return Math.abs(x - cx) < width;
+    }
+
+    function drawHourglass() {
+      const cx = w / 2;
+      const cy = h / 2;
+      ctx.strokeStyle = "rgba(255,215,130,0.3)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - 120, cy - 180);
+      ctx.lineTo(cx + 120, cy - 180);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx - 120, cy + 180);
+      ctx.lineTo(cx + 120, cy + 180);
+      ctx.lineTo(cx, cy);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    function restart() {
+      initGrains();
+    }
 
     function update() {
       ctx.clearRect(0, 0, w, h);
+      drawHourglass();
+
+      let inside = 0;
 
       for (const g of grains) {
         const dx = touch.x - g.x;
         const dy = touch.y - g.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-        if (touch.active && dist < 120) {
-          const force = (1 - dist / 120) * 0.4;
-          g.vx += dx / dist * force;
-          g.vy += dy / dist * force;
+        if (touch.active && dist < 140) {
+          const force = (1 - dist / 140) * 1.2;
+          g.vx += (dx / dist) * force;
+          g.vy += (dy / dist) * force;
         }
 
-        g.vx += (g.ox - g.x) * 0.0005;
-        g.vy += (g.oy - g.y) * 0.0005;
-
-        g.vx *= 0.92;
-        g.vy *= 0.92;
-
+        g.vx *= 0.9;
+        g.vy *= 0.9;
         g.x += g.vx;
         g.y += g.vy;
 
-        ctx.fillStyle = "rgba(120, 105, 80, 0.35)";
-        ctx.fillRect(g.x, g.y, 1.2, 1.2);
+        if (inHourglass(g.x, g.y)) inside++;
+
+        ctx.fillStyle = "rgba(255, 200, 80, 0.9)";
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (inside > GRAIN_COUNT * 0.8) {
+        ctx.fillStyle = "rgba(255,215,130,0.5)";
+        ctx.font = "20px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText("done.", w / 2, h / 2 + 220);
       }
 
       requestAnimationFrame(update);
@@ -112,4 +184,3 @@
   </script>
 </body>
 </html>
-
