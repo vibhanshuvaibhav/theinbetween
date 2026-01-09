@@ -1,186 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>The In-Between — Hourglass</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      overflow: hidden;
-      touch-action: none;
-      color: rgba(255, 215, 130, 0.7);
-      font-family: system-ui, sans-serif;
-    }
-    canvas {
-      display: block;
-    }
-    .hint {
-      position: absolute;
-      bottom: 64px;
-      width: 100%;
-      text-align: center;
-      font-size: 14px;
-      letter-spacing: 0.1em;
-      pointer-events: none;
-    }
-    .restart {
-      position: absolute;
-      bottom: 24px;
-      width: 100%;
-      text-align: center;
-      font-size: 12px;
-      opacity: 0.6;
-      cursor: pointer;
-    }
-    .privacy {
-      position: absolute;
-      top: 12px;
-      width: 100%;
-      text-align: center;
-      font-size: 11px;
-      opacity: 0.4;
-      pointer-events: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>The In-Between — Rest</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  background:#0b0f0d;
+  overflow:hidden;
+  touch-action:none;
+  font-family:'Playfair Display',serif;
+}
+canvas{display:block;}
+.ui{
+  position:absolute;width:100%;text-align:center;
+  color:rgba(255,255,255,0.75);
+  pointer-events:none;
+}
+#hint{top:14px;font-size:15px;letter-spacing:0.06em;}
+#done{top:50%;transform:translateY(-50%);font-size:22px;display:none;}
+#privacy{bottom:12px;font-size:11px;opacity:0.4;}
+#reset{
+  position:absolute;bottom:36px;width:100%;
+  text-align:center;font-size:13px;opacity:0.6;
+  cursor:pointer;pointer-events:auto;display:none;
+}
+</style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
-  <div class="privacy">no tracking. no data stored. nothing leaves your device.</div>
-  <div class="hint">let’s put the sand where they belong</div>
-  <div class="restart" onclick="restart()">restart</div>
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+<canvas id="canvas"></canvas>
+<div class="ui" id="hint">help crow (mind) have some water (rest)</div>
+<div class="ui" id="done">well done. let’s get back to work.</div>
+<div id="reset" onclick="reset()">reset</div>
+<div class="ui" id="privacy">no tracking · no data · nothing stored</div>
 
-    let w, h, dpr;
-    function resize() {
-      dpr = window.devicePixelRatio || 1;
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    window.addEventListener("resize", resize);
-    resize();
+<script>
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+let w,h,dpr;
 
-    const grains = [];
-    const GRAIN_COUNT = 180;
+function resize(){
+ dpr=window.devicePixelRatio||1;
+ w=innerWidth;h=innerHeight;
+ canvas.width=w*dpr;canvas.height=h*dpr;
+ canvas.style.width=w+"px";canvas.style.height=h+"px";
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.onresize=resize;resize();
 
-    function initGrains() {
-      grains.length = 0;
-      for (let i = 0; i < GRAIN_COUNT; i++) {
-        grains.push({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: 0,
-          vy: 0
-        });
-      }
-    }
+const jar={x:()=>w/2,y:()=>h*0.42,w:120,h:220,water:0};
+let stones=[];
+const TOTAL=60;
 
-    initGrains();
+function init(){
+ stones=[];
+ for(let i=0;i<TOTAL;i++){
+  const side=i<30?-1:1;
+  stones.push({
+   x:jar.x()+side*120,
+   y:h*0.6+(i%30)*10,
+   r:7,
+   in:false
+  });
+ }
+ jar.water=0;
+ document.getElementById("done").style.display="none";
+ document.getElementById("reset").style.display="none";
+}
+init();
 
-    let touch = { x: 0, y: 0, active: false };
+let drag=null;
 
-    canvas.addEventListener("pointerdown", e => {
-      touch.active = true;
-      touch.x = e.clientX;
-      touch.y = e.clientY;
-    });
+canvas.onpointerdown=e=>{
+ startSound();
+ const x=e.clientX,y=e.clientY;
+ for(const s of stones){
+  if(!s.in && Math.hypot(x-s.x,y-s.y)<s.r+8){drag=s;break;}
+ }
+};
 
-    canvas.addEventListener("pointermove", e => {
-      if (!touch.active) return;
-      touch.x = e.clientX;
-      touch.y = e.clientY;
-    });
+canvas.onpointermove=e=>{
+ if(drag){drag.x=e.clientX;drag.y=e.clientY;}
+};
 
-    function clearTouch() {
-      touch.active = false;
-    }
+canvas.onpointerup=()=>{
+ if(drag){
+  if(
+   drag.x>jar.x()-jar.w/2 &&
+   drag.x<jar.x()+jar.w/2 &&
+   drag.y>jar.y()-jar.h/2 &&
+   drag.y<jar.y()+jar.h/2
+  ){
+   drag.in=true;
+   jar.water++;
+  }
+ }
+ drag=null;
+};
 
-    canvas.addEventListener("pointerup", clearTouch);
-    canvas.addEventListener("pointerleave", clearTouch);
-    canvas.addEventListener("pointercancel", clearTouch);
+function draw(){
+ ctx.clearRect(0,0,w,h);
 
-    function inHourglass(x, y) {
-      const cx = w / 2;
-      const cy = h / 2;
-      const top = cy - 180;
-      const bottom = cy + 180;
-      if (y < top || y > bottom) return false;
-      const t = Math.abs((y - cy) / 180);
-      const width = 120 * (1 - t);
-      return Math.abs(x - cx) < width;
-    }
+ // sky
+ ctx.fillStyle="#0b0f0d";
+ ctx.fillRect(0,0,w,h);
 
-    function drawHourglass() {
-      const cx = w / 2;
-      const cy = h / 2;
-      ctx.strokeStyle = "rgba(255,215,130,0.3)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - 120, cy - 180);
-      ctx.lineTo(cx + 120, cy - 180);
-      ctx.lineTo(cx, cy);
-      ctx.lineTo(cx - 120, cy + 180);
-      ctx.lineTo(cx + 120, cy + 180);
-      ctx.lineTo(cx, cy);
-      ctx.closePath();
-      ctx.stroke();
-    }
+ // ground
+ ctx.fillStyle="#123a2a";
+ ctx.fillRect(0,h*0.7,w,h);
 
-    function restart() {
-      initGrains();
-    }
+ // jar
+ ctx.strokeStyle="rgba(200,200,200,0.6)";
+ ctx.lineWidth=2;
+ ctx.strokeRect(jar.x()-jar.w/2,jar.y()-jar.h/2,jar.w,jar.h);
 
-    function update() {
-      ctx.clearRect(0, 0, w, h);
-      drawHourglass();
+ // water
+ const waterHeight=(jar.water/TOTAL)*jar.h;
+ ctx.fillStyle="rgba(100,160,180,0.6)";
+ ctx.fillRect(jar.x()-jar.w/2,jar.y()+jar.h/2-waterHeight,jar.w,waterHeight);
 
-      let inside = 0;
+ // crow
+ ctx.fillStyle="rgba(0,0,0,0.7)";
+ ctx.beginPath();
+ ctx.arc(jar.x(),jar.y()-jar.h/2-16,8,0,Math.PI*2);
+ ctx.fill();
 
-      for (const g of grains) {
-        const dx = touch.x - g.x;
-        const dy = touch.y - g.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+ // stones
+ for(const s of stones){
+  if(s.in)continue;
+  ctx.fillStyle="rgba(190,190,190,0.9)";
+  ctx.beginPath();
+  ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+  ctx.fill();
+ }
 
-        if (touch.active && dist < 140) {
-          const force = (1 - dist / 140) * 1.2;
-          g.vx += (dx / dist) * force;
-          g.vy += (dy / dist) * force;
-        }
+ if(jar.water>=TOTAL){
+  document.getElementById("done").style.display="block";
+  document.getElementById("reset").style.display="block";
+ }
 
-        g.vx *= 0.9;
-        g.vy *= 0.9;
-        g.x += g.vx;
-        g.y += g.vy;
+ requestAnimationFrame(draw);
+}
+draw();
 
-        if (inHourglass(g.x, g.y)) inside++;
+function reset(){init();}
 
-        ctx.fillStyle = "rgba(255, 200, 80, 0.9)";
-        ctx.beginPath();
-        ctx.arc(g.x, g.y, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      if (inside > GRAIN_COUNT * 0.8) {
-        ctx.fillStyle = "rgba(255,215,130,0.5)";
-        ctx.font = "20px system-ui";
-        ctx.textAlign = "center";
-        ctx.fillText("done.", w / 2, h / 2 + 220);
-      }
-
-      requestAnimationFrame(update);
-    }
-
-    update();
-  </script>
+/* soft ambient tone */
+let audioStarted=false;
+let ctxAudio,osc,gain;
+function startSound(){
+ if(audioStarted)return;
+ audioStarted=true;
+ ctxAudio=new AudioContext();
+ osc=ctxAudio.createOscillator();
+ osc.frequency.value=120;
+ osc.type="sine";
+ gain=ctxAudio.createGain();
+ gain.gain.value=0.04;
+ osc.connect(gain).connect(ctxAudio.destination);
+ osc.start();
+}
+</script>
 </body>
 </html>
