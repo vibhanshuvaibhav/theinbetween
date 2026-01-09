@@ -8,10 +8,7 @@
     <style>
         :root {
             --sky: #f0f4f7;
-            --grass-top: #3d5a45;
-            --grass-bottom: #1e2f23;
-            --stone-base: #5d5751;
-            --text-main: #333;
+            --text-main: #1a1a1a;
         }
         html, body {
             margin: 0; padding: 0;
@@ -20,22 +17,27 @@
             touch-action: none;
             font-family: 'Inter', sans-serif;
         }
-        canvas { display: block; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
         .ui { 
             position: absolute; width: 100%; text-align: center; 
-            color: var(--text-main); pointer-events: none; z-index: 10;
+            color: var(--text-main); pointer-events: none; z-index: 20;
         }
         #hint { 
-            top: 10%; font-size: 0.8rem; letter-spacing: 0.08em; 
+            top: 8%; font-size: 0.85rem; letter-spacing: 0.05em; 
             line-height: 1.8; opacity: 0.8; font-weight: 300;
         }
         #done { 
-            top: 45%; font-size: 1.2rem; display: none; 
-            pointer-events: auto; cursor: pointer; letter-spacing: 0.05em;
+            top: 45%; font-size: 1.4rem; display: none; 
+            pointer-events: auto; cursor: pointer; font-weight: 300;
         }
         #privacy { 
-            bottom: 25px; font-size: 0.6rem; letter-spacing: 0.2em; 
-            text-transform: lowercase; color: #000; font-weight: 400;
+            bottom: 30px; font-size: 0.65rem; letter-spacing: 0.15em; 
+            text-transform: lowercase; color: #000;
+        }
+        #crow-container {
+            position: absolute; width: 60px; height: 60px;
+            z-index: 15; transition: all 2s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            transform-origin: center;
         }
         #gate {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -49,13 +51,18 @@
 
 <div id="gate">tap to enter garden</div>
 
+<div id="crow-container">
+    <svg viewBox="0 0 100 100" id="crow-svg">
+        <path d="M90,40 C85,35 75,32 65,35 C60,30 50,25 40,28 C30,32 20,45 15,55 L10,60 L20,58 C25,70 40,80 55,75 C65,72 80,60 90,40 Z" fill="#1a1a1a"/>
+        <path d="M10,60 L5,62 L10,64 Z" fill="#000"/> </svg>
+</div>
+
 <canvas id="canvas"></canvas>
 <div class="ui" id="hint">help crow (mind) have some water (rest)<br>put the stones in the jar</div>
 <div class="ui" id="done">well done. let’s get back to life.</div>
 <div class="ui" id="privacy">no tracking · no data · nothing stored</div>
 
 <script>
-/** AUDIO - 528Hz HEALING FREQUENCY **/
 let audioCtx, osc, gain;
 function startAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -64,7 +71,7 @@ function startAudio() {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(528, audioCtx.currentTime);
     gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 3);
+    gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 3);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
@@ -72,6 +79,7 @@ function startAudio() {
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const crowEl = document.getElementById("crow-container");
 let w, h, dpr;
 
 function resize() {
@@ -80,28 +88,36 @@ function resize() {
     canvas.width = w * dpr; canvas.height = h * dpr;
     canvas.style.width = w + "px"; canvas.style.height = h + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    resetCrow();
 }
 window.onresize = resize; resize();
 
 const TOTAL = 60;
 let stones = [];
-const jar = { x: () => w/2, y: () => h*0.5, width: 110, height: 180, water: 0 };
+const jar = { x: () => w/2, y: () => h*0.5, width: 100, height: 170, water: 0 };
+
+function resetCrow() {
+    crowEl.style.top = "15%";
+    crowEl.style.left = "80%";
+    crowEl.style.transform = "rotate(0deg) scaleX(1)";
+}
 
 function init() {
     stones = [];
     for(let i=0; i<TOTAL; i++) {
         const side = i < 30 ? -1 : 1;
-        const col = i % 6;
-        const row = Math.floor((i % 30) / 6);
+        const col = i % 5;
+        const row = Math.floor((i % 30) / 5);
         stones.push({
-            x: w/2 + (side * (90 + col * 18)),
-            y: h * 0.8 + (row * 14),
-            r: 8 + Math.random() * 4,
-            color: `hsl(25, ${5 + Math.random()*10}%, ${30 + Math.random()*15}%)`,
+            x: w/2 + (side * (85 + col * 18)),
+            y: h * 0.8 + (row * 12),
+            r: 7 + Math.random() * 5,
+            color: `hsl(25, 10%, ${25 + Math.random()*15}%)`,
             in: false
         });
     }
     jar.water = 0;
+    resetCrow();
     document.getElementById("done").style.display = "none";
 }
 
@@ -123,25 +139,41 @@ canvas.onpointerdown = e => {
 canvas.onpointermove = e => { if(drag) { drag.x = e.clientX; drag.y = e.clientY; } };
 canvas.onpointerup = () => {
     if(drag) {
-        if(Math.abs(drag.x - jar.x()) < 50 && drag.y < jar.y() + 90 && drag.y > jar.y() - 90) {
+        if(Math.abs(drag.x - jar.x()) < 50 && drag.y > jar.y() - 100 && drag.y < jar.y() + 100) {
             drag.in = true;
             jar.water++;
+            if(jar.water === TOTAL) triggerCrow();
         }
     }
     drag = null;
 };
 
-function drawScene() {
-    // Sky Gradient
+function triggerCrow() {
+    // Fly to jar
+    crowEl.style.left = (w/2 + 20) + "px";
+    crowEl.style.top = (h*0.5 - 105) + "px";
+    crowEl.style.transform = "scaleX(-1)"; // Face the water
+    
+    setTimeout(() => {
+        // Lean to drink
+        crowEl.style.transform = "scaleX(-1) rotate(30deg)";
+        setTimeout(() => {
+            document.getElementById("done").style.display = "block";
+        }, 1000);
+    }, 2100);
+}
+
+function drawBackground() {
+    // Sky
     const skyG = ctx.createLinearGradient(0, 0, 0, h);
-    skyG.addColorStop(0, "#e8eff2");
+    skyG.addColorStop(0, "#eef2f3");
     skyG.addColorStop(1, "#ffffff");
     ctx.fillStyle = skyG; ctx.fillRect(0,0,w,h);
 
-    // Realistic Grass Bed
+    // Grass
     const grassG = ctx.createLinearGradient(0, h * 0.7, 0, h);
-    grassG.addColorStop(0, "#3d5a45");
-    grassG.addColorStop(1, "#1a2a1f");
+    grassG.addColorStop(0, "#3a533f");
+    grassG.addColorStop(1, "#1a251c");
     ctx.fillStyle = grassG;
     ctx.beginPath();
     ctx.ellipse(w/2, h + 50, w * 1.5, h * 0.45, 0, 0, Math.PI * 2);
@@ -152,75 +184,50 @@ function drawJar() {
     const jX = jar.x(); const jY = jar.y();
     const jW = jar.width; const jH = jar.height;
 
-    // 1. Water with Refraction Look
-    const level = (jar.water / TOTAL) * (jH * 0.85);
+    // Water level
+    const level = (jar.water / TOTAL) * (jH * 0.75);
     ctx.fillStyle = "rgba(173, 216, 230, 0.4)";
     ctx.beginPath();
-    ctx.roundRect(jX - jW/2 + 8, jY + jH - level - 10, jW - 16, level, 10);
+    ctx.roundRect(jX - jW/2 + 10, jY + jH - level - 15, jW - 20, level, 5);
     ctx.fill();
 
-    // 2. Glass Jar Body (Reflective highlights)
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
-    ctx.lineWidth = 1.5;
+    // Glass Jar Silhouette
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
+    ctx.lineWidth = 2;
     ctx.beginPath();
     // Mouth
-    ctx.ellipse(jX, jY - jH/2, jW/2 - 10, 8, 0, 0, Math.PI*2);
-    // Body
-    ctx.moveTo(jX - jW/2 + 10, jY - jH/2);
-    ctx.quadraticCurveTo(jX - jW/2, jY - jH/2 + 20, jX - jW/2, jY);
-    ctx.lineTo(jX - jW/2, jY + jH - 20);
-    ctx.quadraticCurveTo(jX - jW/2, jY + jH, jX - jW/2 + 20, jY + jH);
-    ctx.lineTo(jX + jW/2 - 20, jY + jH);
-    ctx.quadraticCurveTo(jX + jW/2, jY + jH, jX + jW/2, jY + jH - 20);
-    ctx.lineTo(jX + jW/2, jY);
-    ctx.quadraticCurveTo(jX + jW/2, jY - jH/2 + 20, jX + jW/2 - 10, jY - jH/2);
+    ctx.ellipse(jX, jY - jH/2, jW/2 - 5, 8, 0, 0, Math.PI*2);
+    // Body (Apothecary shape)
+    ctx.moveTo(jX - jW/2, jY - jH/2 + 20);
+    ctx.lineTo(jX - jW/2, jY + jH - 10);
+    ctx.quadraticCurveTo(jX - jW/2, jY + jH, jX - jW/2 + 10, jY + jH);
+    ctx.lineTo(jX + jW/2 - 10, jY + jH);
+    ctx.quadraticCurveTo(jX + jW/2, jY + jH, jX + jW/2, jY + jH - 10);
+    ctx.lineTo(jX + jW/2, jY - jH/2 + 20);
     ctx.stroke();
-
-    // 3. Glass Glare (Realism touch)
-    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    
+    // Glass highlight
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
     ctx.beginPath();
-    ctx.moveTo(jX - jW/2 + 15, jY); ctx.lineTo(jX - jW/2 + 15, jY + jH - 40);
+    ctx.moveTo(jX - jW/2 + 12, jY - 40); ctx.lineTo(jX - jW/2 + 12, jY + 40);
     ctx.stroke();
-}
-
-function drawCrow() {
-    const cx = jar.x() + 25;
-    const cy = jar.y() - jar.height/2 - 5;
-    ctx.fillStyle = "#111";
-    // Realistic Silhouette Body
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 22, 12, -0.3, 0, Math.PI*2); ctx.fill();
-    // Head & Neck
-    ctx.beginPath();
-    ctx.arc(cx - 20, cy - 10, 9, 0, Math.PI*2); ctx.fill();
-    // Beak
-    ctx.beginPath();
-    ctx.moveTo(cx - 28, cy - 12); ctx.lineTo(cx - 42, cy - 8); ctx.lineTo(cx - 28, cy - 4); ctx.fill();
-    // Tail
-    ctx.beginPath();
-    ctx.moveTo(cx + 15, cy); ctx.lineTo(cx + 45, cy + 8); ctx.lineTo(cx + 12, cy + 12); ctx.fill();
 }
 
 function loop() {
-    drawScene();
+    drawBackground();
     drawJar();
-    drawCrow();
 
     stones.forEach(s => {
         if(!s.in) {
-            // Shadow
-            ctx.fillStyle = "rgba(0,0,0,0.15)";
+            // Drop shadow
+            ctx.fillStyle = "rgba(0,0,0,0.1)";
             ctx.beginPath(); ctx.ellipse(s.x, s.y+4, s.r, s.r*0.4, 0, 0, Math.PI*2); ctx.fill();
-            // Stone
+            // Stone texture
             ctx.fillStyle = s.color;
-            ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r, s.r*0.75, Math.random(), 0, Math.PI*2); ctx.fill();
-            // Highlight
-            ctx.fillStyle = "rgba(255,255,255,0.1)";
-            ctx.beginPath(); ctx.ellipse(s.x-2, s.y-2, s.r*0.4, s.r*0.2, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r, s.r*0.8, Math.random(), 0, Math.PI*2); ctx.fill();
         }
     });
 
-    if(jar.water >= TOTAL) document.getElementById("done").style.display = "block";
     requestAnimationFrame(loop);
 }
 loop();
