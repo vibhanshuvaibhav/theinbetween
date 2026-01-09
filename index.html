@@ -166,7 +166,7 @@
                 if (dist(white.x, white.y, items[i].pos.x, items[i].pos.y) < 45) {
                     if (items[i].t === 'p') pEaten++; else dEaten++;
                     items.splice(i, 1);
-                    if (navigator.vibrate) navigator.vibrate(6); 
+                    if (navigator.vibrate) navigator.vibrate(10); 
                 } else if (--items[i].l <= 0) items.splice(i, 1);
             }
 
@@ -180,32 +180,28 @@
             let dG = dist(white.x, white.y, gold.x, gold.y);
             let dR = dist(white.x, white.y, red.x, red.y);
 
-            // Gold message
             let gEl = document.getElementById('msg-g');
             if (dG > 180) {
                 gEl.style.opacity = "1";
                 gEl.style.left = constrain(gold.x - 40, 20, width-100) + "px";
                 gEl.style.top = (gold.y - 50) + "px";
+                
+                // RECALIBRATION VIBRATION: Heartbeat pattern
+                if (frameCount % 40 === 0 && navigator.vibrate) {
+                    navigator.vibrate([50, 100, 50]);
+                }
             } else {
                 gEl.style.opacity = "0";
             }
 
-            // Red message
             let rEl = document.getElementById('msg-r');
             if (dR > 110) {
-                rEl.innerText = "whoa...";
                 rEl.style.opacity = "1";
                 rEl.style.left = constrain(red.x - 40, 20, width-100) + "px";
                 rEl.style.top = (red.y + 40) + "px";
-            } else if (dG < 100) {
-                rEl.innerText = "thank you";
-                rEl.style.opacity = "1";
-                rEl.style.left = constrain(red.x - 40, 20, width-100) + "px";
-                rEl.style.top = (red.y + 40) + "px";
-                frames++; // Bonus flow
             } else {
                 rEl.style.opacity = "0";
-                frames++;
+                frames++; // Flow continues as long as red is safe
             }
         }
 
