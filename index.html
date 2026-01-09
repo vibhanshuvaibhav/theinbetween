@@ -78,6 +78,7 @@
         let items = [];
         let flowFrames = 0, applesEaten = 0, diamondsEaten = 0;
         let started = false;
+        let angle = 0;
         const OFFSET_Y = -120;
 
         function setup() {
@@ -90,6 +91,12 @@
         function draw() {
             background(5, 5, 5, 85);
 
+            // 1. GOLD MOVEMENT (Autonomous Drift)
+            angle += 0.006;
+            let goldX = width/2 + cos(angle * 0.7) * (width * 0.3);
+            let goldY = height/2 + sin(angle * 0.9) * (height * 0.25);
+            let autonomousGold = createVector(goldX, goldY);
+
             if (mouseIsPressed || touches.length > 0) {
                 if(!started) {
                     started = true;
@@ -101,10 +108,16 @@
             }
 
             if (started) {
-                gold.lerp(white, 0.035); 
+                // Gold follows its path, but is slightly "magnetized" to White
+                // This makes it move, but requires the user to stay in its orbit
+                let magneticGold = p5.Vector.lerp(autonomousGold, white, 0.2);
+                gold.lerp(magneticGold, 0.1); 
+                
+                // Red follows White with a slight delay
                 red.lerp(white, 0.045);
             }
 
+            // Spawn Rewards
             if (started && frameCount % 130 === 0) {
                 let type = random() > 0.4 ? 'apple' : 'diamond';
                 items.push({
@@ -114,6 +127,7 @@
                 });
             }
 
+            // Consumption Logic
             for (let i = items.length - 1; i >= 0; i--) {
                 let d = dist(white.x, white.y, items[i].pos.x, items[i].pos.y);
                 if (d < 45) {
