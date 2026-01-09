@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The In-Between | Flow</title>
+    <title>The In-Between | Sensory Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
@@ -13,7 +13,7 @@
             position: absolute; top: 100px; width: 100%;
             text-align: center; color: rgba(255, 255, 255, 0.6);
             font-family: 'Inter', -apple-system, sans-serif; font-weight: 200;
-            font-size: 0.8rem; line-height: 1.8; letter-spacing: 3px;
+            font-size: 0.8rem; line-height: 2; letter-spacing: 3px;
             z-index: 200; transition: opacity 1.5s ease;
         }
 
@@ -27,11 +27,13 @@
 
         #quit-btn {
             position: absolute; bottom: 30px; right: 30px;
-            color: rgba(255, 255, 255, 0.2); font-family: 'Inter', sans-serif;
-            font-size: 0.7rem; letter-spacing: 2px; border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px 15px; border-radius: 20px; cursor: pointer;
+            color: rgba(255, 255, 255, 0.5); font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; letter-spacing: 2px; border: 1.5px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.4);
+            padding: 10px 20px; border-radius: 25px; cursor: pointer;
             z-index: 300; transition: all 0.3s;
         }
+        #quit-btn:hover { background: #fff; color: #000; }
 
         #end-screen {
             position: fixed; inset: 0; background: #050505;
@@ -51,14 +53,19 @@
 </head>
 <body oncontextmenu="return false;">
 
+    <audio id="bg-ocean" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg"> <source src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3" type="audio/mpeg">
+    </audio>
+
     <div id="instruction-overlay">
         achieve flow state<br>
-        <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3);">make golden follow white<br>collect apples and diamonds</span>
+        collect rewards along the way<br>
+        take care of red
     </div>
 
     <div id="stats-bar">
         <span id="flow-count">flow: 0s</span>
-        <span id="apple-count">🍎: 0</span>
+        <span id="dessert-count">🍰: 0</span>
         <span id="diamond-count">💎: 0</span>
     </div>
 
@@ -72,26 +79,29 @@
 
     <div id="gold-msg" class="ios-bubble">follow me</div>
     <div id="red-msg" class="ios-bubble">thankyou</div>
+    <div id="whoa-msg" class="ios-bubble" style="background: rgba(255, 0, 0, 0.2); border: 0.5px solid rgba(255, 0, 0, 0.4);">whoa...</div>
 
     <script>
         let gold, white, red;
         let items = [];
-        let flowFrames = 0, applesEaten = 0, diamondsEaten = 0;
+        let flowFrames = 0, dessertsEaten = 0, diamondsEaten = 0;
         let started = false;
         let angle = 0;
         const OFFSET_Y = -120;
+        let oceanAudio;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
             gold = createVector(width/2, height*0.4);
             white = createVector(width/2, height/2);
             red = createVector(width/2, height*0.7);
+            oceanAudio = document.getElementById('bg-ocean');
+            oceanAudio.volume = 0.3; // Calming, low volume
         }
 
         function draw() {
             background(5, 5, 5, 85);
 
-            // 1. GOLD MOVEMENT (Autonomous Drift)
             angle += 0.006;
             let goldX = width/2 + cos(angle * 0.7) * (width * 0.3);
             let goldY = height/2 + sin(angle * 0.9) * (height * 0.25);
@@ -100,6 +110,7 @@
             if (mouseIsPressed || touches.length > 0) {
                 if(!started) {
                     started = true;
+                    oceanAudio.play();
                     document.getElementById('instruction-overlay').style.opacity = "0";
                     setTimeout(() => { document.getElementById('instruction-overlay').style.display = "none"; }, 1500);
                 }
@@ -108,18 +119,13 @@
             }
 
             if (started) {
-                // Gold follows its path, but is slightly "magnetized" to White
-                // This makes it move, but requires the user to stay in its orbit
                 let magneticGold = p5.Vector.lerp(autonomousGold, white, 0.2);
                 gold.lerp(magneticGold, 0.1); 
-                
-                // Red follows White with a slight delay
                 red.lerp(white, 0.045);
             }
 
-            // Spawn Rewards
             if (started && frameCount % 130 === 0) {
-                let type = random() > 0.4 ? 'apple' : 'diamond';
+                let type = random() > 0.4 ? 'dessert' : 'diamond';
                 items.push({
                     pos: createVector(random(60, width-60), random(140, height-140)),
                     type: type,
@@ -127,11 +133,10 @@
                 });
             }
 
-            // Consumption Logic
             for (let i = items.length - 1; i >= 0; i--) {
                 let d = dist(white.x, white.y, items[i].pos.x, items[i].pos.y);
                 if (d < 45) {
-                    if (items[i].type === 'apple') applesEaten++;
+                    if (items[i].type === 'dessert') dessertsEaten++;
                     else diamondsEaten++;
                     items.splice(i, 1);
                     if ("vibrate" in navigator) navigator.vibrate(12);
@@ -150,17 +155,26 @@
 
         function updateUI(d, flow) {
             document.getElementById('flow-count').innerText = `flow: ${flow}s`;
-            document.getElementById('apple-count').innerText = `🍎: ${applesEaten}`;
+            document.getElementById('dessert-count').innerText = `🍰: ${dessertsEaten}`;
             document.getElementById('diamond-count').innerText = `💎: ${diamondsEaten}`;
 
+            let whoaMsg = document.getElementById('whoa-msg');
+            
             if (d > 220 && started) {
                 red.x += random(-3.5, 3.5); red.y += random(-3.5, 3.5);
                 document.getElementById('gold-msg').style.display = 'block';
                 document.getElementById('gold-msg').style.left = (gold.x + 20) + 'px';
                 document.getElementById('gold-msg').style.top = (gold.y - 50) + 'px';
+                
+                // Show "whoa..." when red suffers
+                whoaMsg.style.display = 'block';
+                whoaMsg.style.left = (red.x - 30) + 'px';
+                whoaMsg.style.top = (red.y + 30) + 'px';
+                if (frameCount % 10 === 0) if ("vibrate" in navigator) navigator.vibrate(5);
             } else {
                 if (started) flowFrames++;
                 document.getElementById('gold-msg').style.display = 'none';
+                whoaMsg.style.display = 'none';
             }
 
             let rMsg = document.getElementById('red-msg');
@@ -174,7 +188,7 @@
         function drawElements(d) {
             textSize(22); textAlign(CENTER, CENTER);
             items.forEach(item => {
-                let label = item.type === 'apple' ? '🍎' : '💎';
+                let label = item.type === 'dessert' ? '🍰' : '💎';
                 text(label, item.pos.x, item.pos.y);
             });
 
@@ -200,11 +214,12 @@
         }
 
         function endSession() {
+            oceanAudio.pause();
             let flow = Math.floor(flowFrames / 60);
             document.getElementById('end-screen').style.display = 'flex';
             document.getElementById('summary-text').innerText = 
                 `flow attained: ${flow}s\n` +
-                `sustenance (🍎): ${applesEaten}\n` +
+                `sustenance (🍰): ${dessertsEaten}\n` +
                 `discipline (💎): ${diamondsEaten}\n\n` +
                 `you have reclaimed your focus.\nnow, return to life with intention.`;
         }
