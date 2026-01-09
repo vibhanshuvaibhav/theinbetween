@@ -2,129 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The In-Between | Balance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The In-Between | Focus</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
-        body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: none; }
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
+
+        body { 
+            margin: 0; padding: 0; background: #050505; 
+            overflow: hidden; cursor: none; 
+        }
         
-        /* iPhone Style Message Bubble */
+        #timer-container {
+            position: absolute;
+            top: 40px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.2);
+            font-family: 'Inter', -apple-system, sans-serif;
+            font-weight: 200;
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            transition: color 1s ease;
+            pointer-events: none;
+        }
+
         #msg-container {
             position: absolute;
             pointer-events: none;
             display: none;
             z-index: 100;
+            transition: opacity 0.3s ease;
         }
 
         .ios-bubble {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 0.5px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 14px;
+            padding: 7px 14px;
             border-radius: 18px;
             color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             font-size: 13px;
-            letter-spacing: -0.2px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
 
-        /* The small tail of the bubble */
         .ios-bubble::after {
             content: "";
             position: absolute;
-            bottom: -5px;
-            left: 20px;
-            width: 10px;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            bottom: -4px;
+            left: 15px;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
             clip-path: polygon(0 0, 100% 0, 50% 100%);
-        }
-
-        #instruction {
-            position: absolute; width: 100%; bottom: 40px;
-            color: #333; font-family: sans-serif;
-            text-align: center; letter-spacing: 5px;
-            font-size: 0.6rem; text-transform: uppercase;
-            pointer-events: none;
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
+
+    <div id="timer-container">00:00</div>
 
     <div id="msg-container">
         <div class="ios-bubble">follow me</div>
     </div>
 
-    <div id="instruction">Keep the white centered</div>
-
     <script>
-        let gold, red, white;
+        let gold, white, red;
         let angle = 0;
-        let msg;
+        let msg, timerElement;
+        let framesInZone = 0;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
             gold = createVector(width / 2, height / 2);
-            red = createVector(width / 2, height / 2);
             white = createVector(width / 2, height / 2);
+            red = createVector(width / 2, height / 2);
             msg = document.getElementById('msg-container');
+            timerElement = document.getElementById('timer-container');
         }
 
         function draw() {
-            background(5, 5, 5, 45); 
+            background(5, 5, 5, 60); 
 
-            // 1. GOLDEN DOT - Elegant, unpredictable drift
-            angle += 0.008;
-            gold.x = width/2 + cos(angle) * (width * 0.35) * sin(angle * 0.5);
-            gold.y = height/2 + sin(angle * 0.7) * (height * 0.35);
+            // 1. GOLD (Ambition)
+            angle += 0.006;
+            gold.x = width/2 + cos(angle * 0.8) * (width * 0.35);
+            gold.y = height/2 + sin(angle * 1.2) * (height * 0.25);
 
-            // 2. RED DOT - Controlled by User
-            let targetRed = createVector(mouseX, mouseY);
-            red.lerp(targetRed, 0.15); 
+            // 2. WHITE (You)
+            let targetWhite = createVector(mouseX, mouseY);
+            white.lerp(targetWhite, 0.15); 
 
-            // 3. WHITE DOT - The Balance point
-            let midpoint = p5.Vector.lerp(gold, red, 0.5);
-            white.lerp(midpoint, 0.2);
+            // 3. RED (Reality)
+            red.lerp(white, 0.07); 
 
-            // Logic: Is the user failing?
-            let error = dist(white.x, white.y, midpoint.x, midpoint.y);
+            // LOGIC
+            let distance = dist(white.x, white.y, gold.x, gold.y);
             
-            if (error > 35) {
+            if (distance > 180) {
+                // Show Message & Pause Timer
                 msg.style.display = 'block';
-                msg.style.left = (gold.x + 15) + 'px';
+                msg.style.left = (gold.x + 12) + 'px';
                 msg.style.top = (gold.y - 45) + 'px';
+                msg.style.opacity = '1';
+                timerElement.style.color = "rgba(255, 255, 255, 0.05)";
             } else {
-                msg.style.display = 'none';
+                // Hide Message & Advance Timer
+                msg.style.opacity = '0';
+                timerElement.style.color = "rgba(255, 255, 255, 0.3)";
+                framesInZone++;
+                updateTimer();
+                setTimeout(() => { if(msg.style.opacity === '0') msg.style.display = 'none'; }, 300);
             }
 
             drawDots();
         }
 
-        function drawDots() {
-            // Connection line
-            stroke(255, 255, 255, 8);
-            line(gold.x, gold.y, red.x, red.y);
+        function updateTimer() {
+            let totalSeconds = Math.floor(framesInZone / 60);
+            let mins = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            let secs = (totalSeconds % 60).toString().padStart(2, '0');
+            timerElement.innerText = `${mins}:${secs}`;
+        }
 
-            // Gold Dot
+        function drawDots() {
             noStroke();
+            // Gold
             fill(212, 175, 55); 
             ellipse(gold.x, gold.y, 14, 14);
-            // Gold Outer Glow
-            fill(212, 175, 55, 20);
-            ellipse(gold.x, gold.y, 30, 30);
+            fill(212, 175, 55, 15);
+            ellipse(gold.x, gold.y, 40, 40);
 
-            // Red Dot
+            // Red
             fill(200, 50, 50);
             ellipse(red.x, red.y, 10, 10);
 
-            // White Dot
+            // White
             fill(255);
             ellipse(white.x, white.y, 8, 8);
-            fill(255, 255, 255, 40);
-            ellipse(white.x, white.y, 22, 22);
+            fill(255, 255, 255, 30);
+            ellipse(white.x, white.y, 24, 24);
         }
 
         function windowResized() {
