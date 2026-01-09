@@ -3,49 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The In-Between | Sensory Flow</title>
+    <title>The In-Between | Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
     <style>
         * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
         body { margin: 0; padding: 0; background: #050505; overflow: hidden; cursor: crosshair; }
         
+        /* Updated to pure white and clearer visibility */
         #instruction-overlay {
             position: absolute; top: 100px; width: 100%;
-            text-align: center; color: rgba(255, 255, 255, 0.6);
-            font-family: 'Inter', -apple-system, sans-serif; font-weight: 200;
-            font-size: 0.8rem; line-height: 2; letter-spacing: 3px;
+            text-align: center; color: #ffffff;
+            font-family: 'Inter', -apple-system, sans-serif; font-weight: 300;
+            font-size: 0.9rem; line-height: 2; letter-spacing: 3px;
             z-index: 200; transition: opacity 1.5s ease;
         }
 
         #stats-bar {
             position: absolute; top: 30px; width: 100%;
             display: flex; justify-content: center; gap: 40px;
-            color: rgba(255, 255, 255, 0.2);
-            font-family: 'Inter', sans-serif; font-weight: 200;
-            font-size: 0.75rem; letter-spacing: 2px; pointer-events: none;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif; font-weight: 300;
+            font-size: 0.8rem; letter-spacing: 2px; pointer-events: none;
+            opacity: 0.8;
         }
 
         #quit-btn {
             position: absolute; bottom: 30px; right: 30px;
-            color: rgba(255, 255, 255, 0.5); font-family: 'Inter', sans-serif;
-            font-size: 0.75rem; letter-spacing: 2px; border: 1.5px solid rgba(255,255,255,0.3);
-            background: rgba(0,0,0,0.4);
+            color: #ffffff; font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; letter-spacing: 2px; 
+            border: 1.5px solid #ffffff;
+            background: rgba(255, 255, 255, 0.1);
             padding: 10px 20px; border-radius: 25px; cursor: pointer;
             z-index: 300; transition: all 0.3s;
+            opacity: 0.9;
         }
-        #quit-btn:hover { background: #fff; color: #000; }
+        #quit-btn:hover { background: #ffffff; color: #000000; }
 
         #end-screen {
             position: fixed; inset: 0; background: #050505;
             display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; text-align: center; color: white; font-family: 'Inter', sans-serif;
+            z-index: 1000; text-align: center; color: #ffffff; font-family: 'Inter', sans-serif;
         }
 
         .ios-bubble {
-            position: absolute; background: rgba(255, 255, 255, 0.15);
+            position: absolute; background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 0.5px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px; border-radius: 20px; color: white;
+            border: 0.8px solid rgba(255, 255, 255, 0.4);
+            padding: 8px 16px; border-radius: 20px; color: #ffffff;
             font-family: -apple-system, sans-serif; font-size: 13px;
             pointer-events: none; display: none; z-index: 100;
         }
@@ -54,13 +58,13 @@
 <body oncontextmenu="return false;">
 
     <audio id="bg-ocean" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg"> <source src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3" type="audio/mpeg">
     </audio>
 
     <div id="instruction-overlay">
         achieve flow state<br>
         collect rewards along the way<br>
-        take care of red
+        take care of red dot, it follows you
     </div>
 
     <div id="stats-bar">
@@ -73,13 +77,13 @@
 
     <div id="end-screen">
         <h2 style="font-weight: 200; letter-spacing: 5px; font-size: 1.2rem;">session complete</h2>
-        <p id="summary-text" style="color: #666; font-weight: 200; line-height: 1.8; max-width: 300px; margin-bottom: 40px; font-size: 0.9rem;"></p>
-        <button onclick="location.reload()" style="background:none; border: 1px solid #333; color:#fff; padding: 12px 25px; border-radius: 25px; cursor:pointer; font-size: 0.75rem; letter-spacing: 2px;">return</button>
+        <p id="summary-text" style="color: #ffffff; font-weight: 200; line-height: 1.8; max-width: 300px; margin-bottom: 40px; font-size: 0.9rem; opacity: 0.8;"></p>
+        <button onclick="location.reload()" style="background:none; border: 1px solid #ffffff; color:#fff; padding: 12px 25px; border-radius: 25px; cursor:pointer; font-size: 0.75rem; letter-spacing: 2px;">return</button>
     </div>
 
     <div id="gold-msg" class="ios-bubble">follow me</div>
     <div id="red-msg" class="ios-bubble">thankyou</div>
-    <div id="whoa-msg" class="ios-bubble" style="background: rgba(255, 0, 0, 0.2); border: 0.5px solid rgba(255, 0, 0, 0.4);">whoa...</div>
+    <div id="whoa-msg" class="ios-bubble" style="background: rgba(255, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.5);">whoa...</div>
 
     <script>
         let gold, white, red;
@@ -96,7 +100,7 @@
             white = createVector(width/2, height/2);
             red = createVector(width/2, height*0.7);
             oceanAudio = document.getElementById('bg-ocean');
-            oceanAudio.volume = 0.3; // Calming, low volume
+            oceanAudio.volume = 0.3;
         }
 
         function draw() {
@@ -110,7 +114,7 @@
             if (mouseIsPressed || touches.length > 0) {
                 if(!started) {
                     started = true;
-                    oceanAudio.play();
+                    oceanAudio.play().catch(e => console.log("Audio play deferred"));
                     document.getElementById('instruction-overlay').style.opacity = "0";
                     setTimeout(() => { document.getElementById('instruction-overlay').style.display = "none"; }, 1500);
                 }
@@ -166,11 +170,10 @@
                 document.getElementById('gold-msg').style.left = (gold.x + 20) + 'px';
                 document.getElementById('gold-msg').style.top = (gold.y - 50) + 'px';
                 
-                // Show "whoa..." when red suffers
                 whoaMsg.style.display = 'block';
                 whoaMsg.style.left = (red.x - 30) + 'px';
                 whoaMsg.style.top = (red.y + 30) + 'px';
-                if (frameCount % 10 === 0) if ("vibrate" in navigator) navigator.vibrate(5);
+                if (frameCount % 10 === 0 && "vibrate" in navigator) navigator.vibrate(5);
             } else {
                 if (started) flowFrames++;
                 document.getElementById('gold-msg').style.display = 'none';
@@ -194,23 +197,23 @@
 
             strokeWeight(1.5);
             if (d > 220) {
-                stroke(255, 40, 40, 100);
+                stroke(255, 40, 40, 150);
                 for (let i = 0; i < 10; i++) {
                     line(lerp(white.x, red.x, i/10)+random(-4,4), lerp(white.y, red.y, i/10)+random(-4,4), 
                          lerp(white.x, red.x, (i+1)/10)+random(-4,4), lerp(white.y, red.y, (i+1)/10)+random(-4,4));
                 }
             } else {
-                stroke(255, 255, 255, 12);
+                stroke(255, 255, 255, 20);
                 line(white.x, white.y, red.x, red.y);
             }
-            stroke(255, 255, 255, 12);
+            stroke(255, 255, 255, 20);
             line(gold.x, gold.y, white.x, white.y);
 
             noStroke();
             fill(212, 175, 55); ellipse(gold.x, gold.y, 32, 32);
             fill(200, 50, 50); ellipse(red.x, red.y, 24, 24);
             fill(255); ellipse(white.x, white.y, 18, 18);
-            fill(255, 255, 255, 30); ellipse(white.x, white.y, 45, 45);
+            fill(255, 255, 255, 40); ellipse(white.x, white.y, 45, 45);
         }
 
         function endSession() {
