@@ -7,11 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --grass-deep: #2d4c36;
-            --grass-light: #4a6d4a;
-            --sky: #f4f7f6;
-            --stone: #5d5751;
-            --text: #1a1a1a;
+            --sky: #f0f4f7;
+            --grass-top: #3d5a45;
+            --grass-bottom: #1e2f23;
+            --stone-base: #5d5751;
+            --text-main: #333;
         }
         html, body {
             margin: 0; padding: 0;
@@ -23,54 +23,53 @@
         canvas { display: block; }
         .ui { 
             position: absolute; width: 100%; text-align: center; 
-            color: var(--text); pointer-events: none; z-index: 5;
+            color: var(--text-main); pointer-events: none; z-index: 10;
         }
         #hint { 
-            top: 12%; font-size: 0.85rem; letter-spacing: 0.05em; 
-            line-height: 1.6; opacity: 0.7; 
+            top: 10%; font-size: 0.8rem; letter-spacing: 0.08em; 
+            line-height: 1.8; opacity: 0.8; font-weight: 300;
         }
         #done { 
-            top: 45%; font-size: 1.4rem; display: none; 
-            pointer-events: auto; cursor: pointer; font-weight: 300;
+            top: 45%; font-size: 1.2rem; display: none; 
+            pointer-events: auto; cursor: pointer; letter-spacing: 0.05em;
         }
         #privacy { 
-            bottom: 30px; font-size: 0.65rem; letter-spacing: 0.15em; 
-            text-transform: lowercase; opacity: 0.9; font-weight: 400;
+            bottom: 25px; font-size: 0.6rem; letter-spacing: 0.2em; 
+            text-transform: lowercase; color: #000; font-weight: 400;
         }
-        #overlay {
+        #gate {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--sky); display: flex; align-items: center;
             justify-content: center; z-index: 100; cursor: pointer;
-            transition: opacity 0.8s ease;
+            font-weight: 300; letter-spacing: 0.1em;
         }
     </style>
 </head>
 <body>
 
-<div id="overlay">tap to enter garden</div>
+<div id="gate">tap to enter garden</div>
 
 <canvas id="canvas"></canvas>
-<div class="ui" id="hint">help crow (mind) have some water (rest)<br>— put the stones in water</div>
+<div class="ui" id="hint">help crow (mind) have some water (rest)<br>put the stones in the jar</div>
 <div class="ui" id="done">well done. let’s get back to life.</div>
 <div class="ui" id="privacy">no tracking · no data · nothing stored</div>
 
 <script>
 /** AUDIO - 528Hz HEALING FREQUENCY **/
 let audioCtx, osc, gain;
-function startZen() {
+function startAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     osc = audioCtx.createOscillator();
     gain = audioCtx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(528, audioCtx.currentTime);
     gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 2);
+    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 3);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
 }
 
-/** VISUALS **/
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 let w, h, dpr;
@@ -84,23 +83,22 @@ function resize() {
 }
 window.onresize = resize; resize();
 
-const TOTAL_STONES = 60;
+const TOTAL = 60;
 let stones = [];
-const jar = { x: () => w/2, y: () => h*0.52, width: 100, height: 160, water: 0 };
+const jar = { x: () => w/2, y: () => h*0.5, width: 110, height: 180, water: 0 };
 
 function init() {
     stones = [];
-    for(let i=0; i<TOTAL_STONES; i++) {
+    for(let i=0; i<TOTAL; i++) {
         const side = i < 30 ? -1 : 1;
-        const col = i % 5;
-        const row = Math.floor((i % 30) / 5);
+        const col = i % 6;
+        const row = Math.floor((i % 30) / 6);
         stones.push({
-            x: w/2 + (side * (85 + col * 18)),
-            y: h * 0.78 + (row * 12),
-            r: 7 + Math.random() * 5,
-            color: `hsl(${20 + Math.random()*10}, 15%, ${30 + Math.random()*15}%)`, // Brownish-grey
-            in: false,
-            targetY: h * 0.78 + (row * 12)
+            x: w/2 + (side * (90 + col * 18)),
+            y: h * 0.8 + (row * 14),
+            r: 8 + Math.random() * 4,
+            color: `hsl(25, ${5 + Math.random()*10}%, ${30 + Math.random()*15}%)`,
+            in: false
         });
     }
     jar.water = 0;
@@ -108,10 +106,9 @@ function init() {
 }
 
 let drag = null;
-document.getElementById("overlay").onclick = function() {
-    this.style.opacity = '0';
-    setTimeout(() => this.style.display = 'none', 800);
-    startZen();
+document.getElementById("gate").onclick = function() {
+    this.style.display = 'none';
+    startAudio();
     init();
 };
 
@@ -126,7 +123,7 @@ canvas.onpointerdown = e => {
 canvas.onpointermove = e => { if(drag) { drag.x = e.clientX; drag.y = e.clientY; } };
 canvas.onpointerup = () => {
     if(drag) {
-        if(Math.abs(drag.x - jar.x()) < 40 && drag.y < jar.y() + 80) {
+        if(Math.abs(drag.x - jar.x()) < 50 && drag.y < jar.y() + 90 && drag.y > jar.y() - 90) {
             drag.in = true;
             jar.water++;
         }
@@ -134,82 +131,96 @@ canvas.onpointerup = () => {
     drag = null;
 };
 
-function drawGarden() {
-    // Sky
-    ctx.fillStyle = "#f4f7f6";
-    ctx.fillRect(0, 0, w, h);
+function drawScene() {
+    // Sky Gradient
+    const skyG = ctx.createLinearGradient(0, 0, 0, h);
+    skyG.addColorStop(0, "#e8eff2");
+    skyG.addColorStop(1, "#ffffff");
+    ctx.fillStyle = skyG; ctx.fillRect(0,0,w,h);
 
-    // Grass (Layered for "Animated" look)
-    const g = ctx.createLinearGradient(0, h * 0.65, 0, h);
-    g.addColorStop(0, "#4a6d4a");
-    g.addColorStop(1, "#2d4c36");
-    ctx.fillStyle = g;
+    // Realistic Grass Bed
+    const grassG = ctx.createLinearGradient(0, h * 0.7, 0, h);
+    grassG.addColorStop(0, "#3d5a45");
+    grassG.addColorStop(1, "#1a2a1f");
+    ctx.fillStyle = grassG;
     ctx.beginPath();
-    ctx.ellipse(w/2, h + 20, w * 1.2, h * 0.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(w/2, h + 50, w * 1.5, h * 0.45, 0, 0, Math.PI * 2);
     ctx.fill();
 }
 
 function drawJar() {
-    const jX = jar.x();
-    const jY = jar.y();
-    
-    // Water
-    const level = (jar.water / TOTAL_STONES) * (jar.height * 0.75);
-    ctx.fillStyle = "rgba(180, 220, 240, 0.5)";
+    const jX = jar.x(); const jY = jar.y();
+    const jW = jar.width; const jH = jar.height;
+
+    // 1. Water with Refraction Look
+    const level = (jar.water / TOTAL) * (jH * 0.85);
+    ctx.fillStyle = "rgba(173, 216, 230, 0.4)";
     ctx.beginPath();
-    ctx.roundRect(jX - 45, jY + jar.height - level - 10, 90, level, 5);
+    ctx.roundRect(jX - jW/2 + 8, jY + jH - level - 10, jW - 16, level, 10);
     ctx.fill();
 
-    // Jar Body (Elegant Silhouette)
-    ctx.strokeStyle = "rgba(0,0,0,0.15)";
-    ctx.lineWidth = 2;
+    // 2. Glass Jar Body (Reflective highlights)
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(jX - 30, jY); // Top neck
-    ctx.lineTo(jX + 30, jY);
-    ctx.quadraticCurveTo(jX + 50, jY + 20, jX + 50, jY + 50); // Shoulder
-    ctx.lineTo(jX + 50, jY + jar.height - 10); // Side
-    ctx.quadraticCurveTo(jX + 50, jY + jar.height, jX + 40, jY + jar.height);
-    ctx.lineTo(jX - 40, jY + jar.height);
-    ctx.quadraticCurveTo(jX - 50, jY + jar.height, jX - 50, jY + jar.height - 10);
-    ctx.lineTo(jX - 50, jY + 50);
-    ctx.quadraticCurveTo(jX - 50, jY + 20, jX - 30, jY);
+    // Mouth
+    ctx.ellipse(jX, jY - jH/2, jW/2 - 10, 8, 0, 0, Math.PI*2);
+    // Body
+    ctx.moveTo(jX - jW/2 + 10, jY - jH/2);
+    ctx.quadraticCurveTo(jX - jW/2, jY - jH/2 + 20, jX - jW/2, jY);
+    ctx.lineTo(jX - jW/2, jY + jH - 20);
+    ctx.quadraticCurveTo(jX - jW/2, jY + jH, jX - jW/2 + 20, jY + jH);
+    ctx.lineTo(jX + jW/2 - 20, jY + jH);
+    ctx.quadraticCurveTo(jX + jW/2, jY + jH, jX + jW/2, jY + jH - 20);
+    ctx.lineTo(jX + jW/2, jY);
+    ctx.quadraticCurveTo(jX + jW/2, jY - jH/2 + 20, jX + jW/2 - 10, jY - jH/2);
+    ctx.stroke();
+
+    // 3. Glass Glare (Realism touch)
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.beginPath();
+    ctx.moveTo(jX - jW/2 + 15, jY); ctx.lineTo(jX - jW/2 + 15, jY + jH - 40);
     ctx.stroke();
 }
 
 function drawCrow() {
-    const cx = jar.x() - 10;
-    const cy = jar.y() - 35;
-    ctx.save();
-    ctx.fillStyle = "#1a1a1a";
-    // Body
-    ctx.beginPath(); ctx.ellipse(cx, cy, 22, 12, 0.2, 0, Math.PI*2); ctx.fill();
-    // Head
-    ctx.beginPath(); ctx.arc(cx - 18, cy - 10, 10, 0, Math.PI*2); ctx.fill();
-    // Tail
-    ctx.beginPath(); ctx.moveTo(cx + 15, cy); ctx.lineTo(cx + 40, cy + 5); ctx.lineTo(cx + 15, cy + 10); ctx.fill();
+    const cx = jar.x() + 25;
+    const cy = jar.y() - jar.height/2 - 5;
+    ctx.fillStyle = "#111";
+    // Realistic Silhouette Body
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 22, 12, -0.3, 0, Math.PI*2); ctx.fill();
+    // Head & Neck
+    ctx.beginPath();
+    ctx.arc(cx - 20, cy - 10, 9, 0, Math.PI*2); ctx.fill();
     // Beak
-    ctx.fillStyle = "#333";
-    ctx.beginPath(); ctx.moveTo(cx - 25, cy - 12); ctx.lineTo(cx - 40, cy - 8); ctx.lineTo(cx - 25, cy - 5); ctx.fill();
-    ctx.restore();
+    ctx.beginPath();
+    ctx.moveTo(cx - 28, cy - 12); ctx.lineTo(cx - 42, cy - 8); ctx.lineTo(cx - 28, cy - 4); ctx.fill();
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(cx + 15, cy); ctx.lineTo(cx + 45, cy + 8); ctx.lineTo(cx + 12, cy + 12); ctx.fill();
 }
 
 function loop() {
-    drawGarden();
+    drawScene();
     drawJar();
     drawCrow();
 
     stones.forEach(s => {
         if(!s.in) {
+            // Shadow
+            ctx.fillStyle = "rgba(0,0,0,0.15)";
+            ctx.beginPath(); ctx.ellipse(s.x, s.y+4, s.r, s.r*0.4, 0, 0, Math.PI*2); ctx.fill();
+            // Stone
             ctx.fillStyle = s.color;
-            ctx.beginPath();
-            ctx.ellipse(s.x, s.y, s.r, s.r*0.7, Math.random(), 0, Math.PI*2);
-            ctx.fill();
+            ctx.beginPath(); ctx.ellipse(s.x, s.y, s.r, s.r*0.75, Math.random(), 0, Math.PI*2); ctx.fill();
+            // Highlight
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            ctx.beginPath(); ctx.ellipse(s.x-2, s.y-2, s.r*0.4, s.r*0.2, 0, 0, Math.PI*2); ctx.fill();
         }
     });
 
-    if(jar.water >= TOTAL_STONES) {
-        document.getElementById("done").style.display = "block";
-    }
+    if(jar.water >= TOTAL) document.getElementById("done").style.display = "block";
     requestAnimationFrame(loop);
 }
 loop();
