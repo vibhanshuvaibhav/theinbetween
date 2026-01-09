@@ -16,18 +16,22 @@
 
         .btn-ui {
             background: none; border: 1px solid #ffffff; color: #ffffff; 
-            padding: 12px 35px; border-radius: 30px; cursor: pointer;
-            font-family: sans-serif; font-weight: 200; font-size: 0.75rem; 
+            padding: 10px 28px; border-radius: 30px; cursor: pointer;
+            font-family: sans-serif; font-weight: 200; font-size: 0.7rem; 
             letter-spacing: 3px; text-transform: lowercase; transition: all 0.6s ease;
-            margin-top: 20px;
         }
         .btn-ui:active { background: #ffffff; color: #000000; }
 
-        #instruction-overlay {
-            position: absolute; top: 18%; width: 100%; text-align: center; color: #ffffff;
-            font-family: -apple-system, sans-serif; font-weight: 300; font-size: 0.85rem; 
-            line-height: 2.8; letter-spacing: 1px; z-index: 200; pointer-events: none; 
-            opacity: 0; transition: opacity 1.5s ease; text-transform: lowercase;
+        #instruction-container {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 200;
+            pointer-events: none; opacity: 0; transition: opacity 1s ease;
+        }
+
+        #instruction-text {
+            color: #ffffff; font-family: -apple-system, sans-serif; font-weight: 300; 
+            font-size: 0.75rem; line-height: 2.8; letter-spacing: 1px; 
+            text-align: center; text-transform: lowercase; margin-bottom: 25px;
         }
 
         #stats-bar {
@@ -37,7 +41,7 @@
             letter-spacing: 1px; pointer-events: none; text-transform: lowercase; opacity: 0; transition: opacity 1s;
         }
 
-        #quit-btn {
+        #action-btn-wrapper {
             position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
             z-index: 300; display: none;
         }
@@ -54,19 +58,21 @@
 <body>
 
     <div id="gate">
-        <button id="gate-btn" class="btn-ui" onclick="showInstructions()">enter flow state</button>
-        <button id="start-btn" class="btn-ui" style="display:none;" onclick="begin()">start</button>
+        <button class="btn-ui" onclick="revealGame()">enter flow state</button>
     </div>
 
     <audio id="snd" loop playsinline preload="auto">
         <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
     </audio>
 
-    <div id="instruction-overlay">
-        follow the gold; it is your purpose<br>
-        embrace the gifts found in the rhythm<br>
-        protect the red; it's your peace<br>
-        target 100s to enter flow state
+    <div id="instruction-container">
+        <div id="instruction-text">
+            follow the gold; it is your purpose<br>
+            embrace the gifts found in the rhythm<br>
+            protect the red; it's your peace<br>
+            target 100s to enter flow state
+        </div>
+        <button id="start-btn" class="btn-ui" style="pointer-events: auto;" onclick="begin()">start</button>
     </div>
 
     <div id="stats-bar">
@@ -75,10 +81,12 @@
         <span id="d-count">💎: 0</span>
     </div>
 
-    <button id="quit-btn" class="btn-ui" onclick="finish()">end session</button>
+    <div id="action-btn-wrapper">
+        <button class="btn-ui" onclick="finish()">end session</button>
+    </div>
 
     <div id="end-screen" style="display:none;">
-        <p id="sum-txt" style="line-height: 2.2; margin-bottom: 20px; font-weight: 200; white-space: pre-line; font-size: 0.9rem; color: #fff; text-align: center;"></p>
+        <p id="sum-txt" style="line-height: 2.2; margin-bottom: 20px; font-weight: 200; white-space: pre-line; font-size: 0.85rem; color: #fff; text-align: center;"></p>
         <button class="btn-ui" onclick="location.reload()">play again</button>
     </div>
 
@@ -97,24 +105,21 @@
             red = createVector(width/2, height*0.7);
         }
 
-        function showInstructions() {
-            document.getElementById('gate-btn').style.display = 'none';
-            document.getElementById('start-btn').style.display = 'block';
-            document.getElementById('instruction-overlay').style.opacity = '1';
-            
+        function revealGame() {
+            document.getElementById('gate').style.display = 'none';
+            document.getElementById('instruction-container').style.opacity = '1';
             let a = document.getElementById('snd');
             a.volume = 0.2;
             a.play().catch(()=>{});
-            
-            active = true; // Shows dots in background
+            active = true; 
         }
 
         function begin() {
             gameRunning = true;
-            document.getElementById('gate').style.display = 'none';
-            document.getElementById('quit-btn').style.display = 'block';
+            document.getElementById('instruction-container').style.opacity = '0';
+            setTimeout(() => { document.getElementById('instruction-container').style.display = 'none'; }, 1000);
+            document.getElementById('action-btn-wrapper').style.display = 'block';
             document.getElementById('stats-bar').style.opacity = '0.6';
-            setTimeout(() => { document.getElementById('instruction-overlay').style.opacity = '0'; }, 3000);
         }
 
         function draw() {
